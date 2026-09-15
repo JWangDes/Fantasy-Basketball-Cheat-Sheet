@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.11
+// @version      1.12
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -222,7 +222,23 @@
     const mine = (R.get(MY_TEAM) || []).slice(); if (extraLine) mine.push(extraLine);
     const my = totals(mine);
     const others = [...R.entries()].filter(([t]) => t !== MY_TEAM).map(([, ls]) => totals(ls));
-    return { my, ranks: CATS.map((_, c) => rankOf(my, others, c)), count: (R.get(MY_TEAM) || []).length };
+    return { my, ranks: CATS.map((_, c) => rankOf(my, others, c)) };
+  }
+  // roto-style overall standing: sum each team's 9 category ranks (lower = better), then rank the 12 sums
+  function overallRank() {
+    const R = rosters();
+    const teamTotals = new Map([...R.entries()].map(([t, ls]) => [t, totals(ls)]));
+    const teams = [...teamTotals.keys()];
+    const sums = teams.map(t => {
+      const mine = teamTotals.get(t), others = teams.filter(x => x !== t).map(x => teamTotals.get(x));
+      return [t, CATS.reduce((s, _, c) => s + rankOf(mine, others, c), 0)];
+    }).sort((a, b) => a[1] - b[1]);
+    let rank = 1;
+    const byTeam = new Map(sums.map(([t, sum], i) => {
+      if (i > 0 && sum !== sums[i - 1][1]) rank = i + 1;
+      return [t, rank];
+    }));
+    return byTeam.get(MY_TEAM);
   }
 
   // ---------- 4. suggestions ----------
@@ -382,7 +398,7 @@
       ? colHead + results.map(({ p, moves }) => playerCard(p, moves, cur, next)).join('')
       : `<div class="empty">No available players match "${escHtml(q)}".</div>`;
     root.innerHTML = head + `<div class="bd">
-      <div><div class="sec"><span>Category ranks (of 12)</span><span>${base.count}/13</span></div>
+      <div><div class="sec"><span>Category ranks</span><span>Overall #${overallRank()} of 12</span></div>
       <div class="grid">${grid}</div></div>
       <div><div class="sec"><span>Search players</span></div>
       <input id="fh-search" type="search" autocomplete="off" placeholder="Player name…" value="${escHtml(S.query)}">
