@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.18
+// @version      1.19
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -271,11 +271,21 @@
     CATS.forEach((c, i) => { const d = base.ranks[i] - a.ranks[i]; score += d * W(base.ranks[i]); if (d !== 0) moves.push([c, base.ranks[i], a.ranks[i], d]); });
     return { score, moves };
   }
-  function suggestions(base) {
+  // 1 = won't last to your next turn, 2 = coin flip, 3 = he'll keep. Same gaps the availability tags use.
+  function urgency(p, waitPick) {
+    if (!waitPick) return 1;
+    const gap = p.adp - waitPick;
+    return gap >= 6 ? 3 : gap >= -6 ? 2 : 1;
+  }
+  function suggestions(base, waitPick) {
     const key = S.mode === 'adp' ? (p => p.adp) : (p => p.value); // pool by the same key we sort on, or ADP mode drops market darlings
     const avail = availablePlayers().sort((a, b) => key(a) - key(b));
     return avail.slice(0, 60).map(p => ({ p, ...evaluate(p, base) }))
-      .sort((x, y) => S.mode === 'fit' ? (y.score - x.score || x.p.value - y.p.value) : key(x.p) - key(y.p)).slice(0, 20);
+      // Best fit is about this pick, not the abstract best fit: a great fit you can still get at your next turn
+      // isn't worth spending this one on, so he sorts under the ones who won't be there. Damped, never hidden.
+      .sort((x, y) => S.mode === 'fit'
+        ? (urgency(x.p, waitPick) - urgency(y.p, waitPick)) || (y.score - x.score) || (x.p.value - y.p.value)
+        : key(x.p) - key(y.p)).slice(0, 20);
   }
   const searchNorm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   function searchResults(base) {
@@ -415,7 +425,7 @@
   const ICON_POP = SVG('<path d="M10 2.5h3.5V6M13.5 2.5L8.5 7.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9.5v3.5a.5.5 0 01-.5.5h-8a.5.5 0 01-.5-.5v-8a.5.5 0 01.5-.5H7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>');
   const ICON_DOCK = SVG('<path d="M13.5 2.5L9 7M9 3.5V7h3.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9.5v3.5a.5.5 0 01-.5.5h-8a.5.5 0 01-.5-.5v-8a.5.5 0 01.5-.5H7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>');
   const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  function playerCard(p, moves, cur, next) {
+  function playerCard(p, moves, cur, waitPick) {
     const byCat = {}; (moves || []).forEach(x => byCat[x[0]] = x);
     const net = (moves || []).reduce((s, x) => s + x[3], 0);
     const L = p.line;
@@ -426,9 +436,6 @@
       const title = `${c}: ${fv(i, vals[i])} per game${x ? ` · your rank #${x[1]} → #${x[2]}` : ' · no rank change'}`;
       return `<span class="cell ${d > 0 ? 'up' : d < 0 ? 'dn' : 'nt'}" title="${title}"><b>${fv(i, vals[i])}</b><i>${d > 0 ? '▲' + d : d < 0 ? '▼' + (-d) : '–'}</i></span>`;
     }).join('')}</div>`;
-    // Will he still be there? Compare his ADP to the pick you'd wait for.
-    const mineNow = S.onClock && S.onClock.team === MY_TEAM;
-    const waitPick = mineNow ? myNextTurn(cur) : next;   // on the clock: your next turn; otherwise: your next pick
     let tag = '';
     if (p.adp < cur - 12) tag = `<span class="tag fall">Faller</span>`;
     else if (waitPick) {
@@ -457,6 +464,8 @@
     root.classList.toggle('min', S.collapsed);
     const next = myNextPick();
     const cur = S.onClock ? S.onClock.pick : S.picks.size + 1;
+    // the pick you'd be waiting for if you pass: on the clock that's your next turn, otherwise your next pick
+    const waitPick = (S.onClock && S.onClock.team === MY_TEAM) ? myNextTurn(cur) : next;
     const status = `${S.picks.size ? S.picks.size + ' picks' : (DOM_MINE.size ? 'your roster only' : '0 picks')}${S.onClock ? ` · #${S.onClock.pick} on clock` : ''}${next ? ` · you #${next}` : ''}${S.ready ? '' : ' · ' + (S.err || 'loading…')}`;
     const updateBanner = S.newVersion ? `<a class="upd" href="${RAW_URL}" target="_blank" rel="noopener">v${escHtml(S.newVersion)} available — click to update</a>` : '';
     const popMsg = S.popErr ? `<div class="sub perr">${escHtml(S.popErr)}</div>` : '';
@@ -469,11 +478,11 @@
     const base = analyze();
     const grid = CATS.map((c, i) => `<div class="row"><span class="cn">${c}</span><span class="val">${fmt(i, base.my[i])}</span><span class="rk ${cls(base.ranks[i])}" >#${base.ranks[i]}</span></div>`).join('');
     const colHead = `<div class="strip hdr"><span class="nh" title="Net rank change across all 9 categories">Net</span>${SHORT.map((s, i) => `<span class="${cls(base.ranks[i])}t">${s}</span>`).join('')}</div>`;
-    const sug = suggestions(base).map(({ p, moves }) => playerCard(p, moves, cur, next)).join('');
+    const sug = suggestions(base, waitPick).map(({ p, moves }) => playerCard(p, moves, cur, waitPick)).join('');
     const q = S.query.trim();
     const results = q ? searchResults(base) : [];
     const searchBody = !q ? '' : results.length
-      ? colHead + results.map(({ p, moves }) => playerCard(p, moves, cur, next)).join('')
+      ? colHead + results.map(({ p, moves }) => playerCard(p, moves, cur, waitPick)).join('')
       : `<div class="empty">No available players match "${escHtml(q)}".</div>`;
     root.innerHTML = head + `<div class="bd">
       <div><div class="sec"><span>Category ranks</span><span>Overall #${overallRank()} of 12</span></div>

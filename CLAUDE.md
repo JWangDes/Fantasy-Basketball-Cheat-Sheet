@@ -46,6 +46,10 @@ User preferences: main points, no fluff. Say "I don't know" and verify when unce
   (Kawhi: xRank 48, ADP 23 — a blend is too late to warn he's gone, too early to reflect his value).
   xRank and ADP correlate at r≈0.97, so the weight mostly matters for the ~20 players who diverge by 15+ picks.
 - Value gap (`ADP − xRank`, shown as a `+n value` / `−n reach` badge when |gap| ≥ 8) is the one signal Yahoo's UI doesn't have.
+- Best fit sorts by urgency tier first (won't last to your next turn → coin flip → he'll keep), then by fit score.
+  A great fit you can still get at your next turn isn't worth spending this pick on; waiting gets you both. Players
+  who'll keep are sorted down, never hidden — that a need can wait is itself useful. Early rounds are where this bites:
+  at pick 12 the best fit in the pool often sits at ADP 38 and would otherwise top the list.
 - Three list modes: **Best fit** (rank change weighted ×0.5 for categories ranked 1–4, ×1 for 5–8, ×0.25 for 9–12),
   **ADP** (pure market order), **Best available** (consensus value). The candidate pool is the top 60 by whichever key the
   mode sorts on — pooling by value while sorting by ADP would drop market darlings — and 20 are shown.

@@ -77,6 +77,22 @@ setTimeout(()=>{
     if(/Likely there/.test(card)) throw new Error('back-to-back tag: ADP 60 read "Likely there" at pick 48 — compared against your own pick 49 instead of the next turn at 72');
     if(!/Likely gone/.test(card)) throw new Error('back-to-back tag: expected "Likely gone" for ADP 60 measured against pick 72');
     els[0]._emit('input',{target:{id:'fh-search',value:''}});
+    // Best fit must never rank someone who'll still be there above someone who won't, however well he fits.
+    // At pick 12 (next turn 25) the best-fitting player in the pool sits at ADP 38 — he has to yield to the
+    // one who won't survive the turn, because waiting gets you both.
+    ws.emit('message',new MessageEvent(ws,'D|12|12|105'));
+    await new Promise(r=>setTimeout(r,300));
+    const tier={'Likely gone':1,'Faller':1,'Maybe there':2,'Likely there':3};
+    const rows=els[0].innerHTML.split('<div class="s">').slice(1).map(c=>({
+      name:(c.match(/class="nm">([^<]+)/)||[])[1],
+      tier:tier[(c.match(/class="tag \w+">([^<]+)/)||[])[1]]||1,
+      net:+((c.match(/class="net [a-z]+">([+-]?\d+)/)||[])[1]||0)}));
+    for(let i=1;i<rows.length;i++) if(rows[i].tier<rows[i-1].tier)
+      throw new Error(`urgency sort: ${rows[i].name} (tier ${rows[i].tier}) ranked below ${rows[i-1].name} (tier ${rows[i-1].tier})`);
+    if(rows[0].tier!==1) throw new Error('urgency sort: top suggestion is not from the most urgent tier');
+    if(!rows.some(r=>r.tier===3)) throw new Error('urgency sort: "Likely there" players were dropped instead of sorted down');
+    if(rows[0].net>=Math.max(...rows.map(r=>r.net))) throw new Error('urgency sort fixture: top row already had the best fit, so this would pass without the tier sort');
+    els[0]._emit('input',{target:{id:'fh-search',value:''}});
     // pop out into its own window, then close it and make sure the inline panel comes back
     const click=(el,act)=>el._emit('click',{target:{closest:s=>s==='button'?{dataset:{act}}:null}});
     click(els[0],'pop');
