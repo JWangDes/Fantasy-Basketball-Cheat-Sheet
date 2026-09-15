@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.9
+// @version      1.10
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -21,7 +21,7 @@
   const m = location.pathname.match(/draftclient\/nba\/(\d+)\/(\d+)/);
   const LEAGUE = m ? m[1] : null, MY_TEAM = m ? +m[2] : null;
 
-  const S = { picks: new Map(), onClock: null, order: [], players: new Map(), ready: false, err: null, mode: 'fit', collapsed: false };
+  const S = { picks: new Map(), onClock: null, order: [], players: new Map(), ready: false, err: null, mode: 'fit', collapsed: false, query: '' };
 
   // ---------- 1. listen to the draft server ----------
   function handle(line) {
@@ -214,14 +214,26 @@
 
   // ---------- 4. suggestions ----------
   const W = r => r <= 4 ? 0.5 : r <= 8 ? 1 : 0.25; // double down / target / punt
-  function suggestions(base) {
+  function availablePlayers() {
     const taken = new Set([...S.picks.values()].map(v => v.pid).concat([...DOM_MINE]));
-    const avail = [...S.players.values()].filter(p => p.line && !taken.has(p.id)).sort((a, b) => a.adp - b.adp);
-    return avail.slice(0, 40).map(p => {
-      const a = analyze(p.line); let score = 0; const moves = [];
-      CATS.forEach((c, i) => { const d = base.ranks[i] - a.ranks[i]; score += d * W(base.ranks[i]); if (d > 0) moves.push([c, base.ranks[i], a.ranks[i], d]); if (d < 0) moves.push([c, base.ranks[i], a.ranks[i], d]); });
-      return { p, score, moves };
-    }).sort((x, y) => S.mode === 'bpa' ? x.p.adp - y.p.adp : (y.score - x.score || x.p.adp - y.p.adp)).slice(0, 10);
+    return [...S.players.values()].filter(p => p.line && !taken.has(p.id));
+  }
+  // how adding this player would move each of your category ranks, vs. base (your current roster)
+  function evaluate(p, base) {
+    const a = analyze(p.line); let score = 0; const moves = [];
+    CATS.forEach((c, i) => { const d = base.ranks[i] - a.ranks[i]; score += d * W(base.ranks[i]); if (d !== 0) moves.push([c, base.ranks[i], a.ranks[i], d]); });
+    return { score, moves };
+  }
+  function suggestions(base) {
+    const avail = availablePlayers().sort((a, b) => a.adp - b.adp);
+    return avail.slice(0, 40).map(p => ({ p, ...evaluate(p, base) }))
+      .sort((x, y) => S.mode === 'bpa' ? x.p.adp - y.p.adp : (y.score - x.score || x.p.adp - y.p.adp)).slice(0, 10);
+  }
+  const searchNorm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  function searchResults(base) {
+    const q = searchNorm(S.query.trim()); if (!q) return [];
+    return availablePlayers().filter(p => searchNorm(p.full + ' ' + p.name).includes(q))
+      .sort((a, b) => a.adp - b.adp).slice(0, 15).map(p => ({ p, ...evaluate(p, base) }));
   }
   function myPickAfter(n) { // first of my picks with number > n
     if (!S.order.length) return null;
@@ -273,7 +285,11 @@
   #fh .strip.hdr .nh{color:#9aa4af;font-size:12px;font-weight:600}#fh .tag.fall{background:#10283a;color:#6cb8f0}
   #fh .tag.safe{background:#14301d;color:#6fd184}#fh .tag.flip{background:#35240f;color:#f0a04b}#fh .tag.gone{background:#361714;color:#ee7a6c}
   #fh .inj{background:#361714;color:#ee7a6c;border-radius:3px;padding:0 5px;font-size:13px;margin-left:6px}
-  #fh.min{width:auto}#fh.min .bd{display:none}#fh.min .hd{border-bottom:none}`;
+  #fh.min{width:auto}#fh.min .bd{display:none}#fh.min .hd{border-bottom:none}
+  #fh input[type=search]{width:100%;background:#161b21;border:1px solid #2f3842;border-radius:6px;color:#e9edf1;padding:6px 10px;font:inherit;font-size:13.5px;margin-top:6px}
+  #fh input[type=search]::placeholder{color:#5c6672}
+  #fh input[type=search]:focus-visible{outline:2px solid #e8a54c;outline-offset:1px}
+  #fh .empty{color:#9aa4af;font-size:13.5px;padding:8px 0}`;
   let root, dirty = false;
   function schedule() { if (!dirty) { dirty = true; setTimeout(render, 150); } }
   function mount() {
@@ -284,6 +300,9 @@
       const b = e.target.closest('button'); if (!b) return;
       if (b.dataset.mode) { S.mode = b.dataset.mode; render(); }
       if (b.dataset.act === 'min') { S.collapsed = !S.collapsed; render(); }
+    });
+    root.addEventListener('input', e => {
+      if (e.target && e.target.id === 'fh-search') { S.query = e.target.value; render(); }
     });
     // drag
     let drag = null;
@@ -299,8 +318,38 @@
   const SHORT = ['FG', 'FT', '3P', 'PT', 'RB', 'AS', 'ST', 'BK', 'TO'];
   const ICON_MIN = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
   const ICON_MAX = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4 10l4-4 4 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function playerCard(p, moves, cur, next) {
+    const byCat = {}; (moves || []).forEach(x => byCat[x[0]] = x);
+    const net = (moves || []).reduce((s, x) => s + x[3], 0);
+    const L = p.line;
+    const vals = [L.fgp, L.ftp, L.tpm, L.pts, L.reb, L.ast, L.stl, L.blk, L.to]; // per game (projected season ÷ projected games)
+    const fv = (i, v) => i < 2 ? v.toFixed(3).replace(/^0/, '') : v.toFixed(1);
+    const cells = `<div class="strip">${'<span class="net ' + (net > 0 ? 'up' : net < 0 ? 'dn' : 'nt') + '">' + (net > 0 ? '+' : '') + net + '</span>'}${CATS.map((c, i) => {
+      const x = byCat[c]; const d = x ? x[3] : 0;
+      const title = `${c}: ${fv(i, vals[i])} per game${x ? ` · your rank #${x[1]} → #${x[2]}` : ' · no rank change'}`;
+      return `<span class="cell ${d > 0 ? 'up' : d < 0 ? 'dn' : 'nt'}" title="${title}"><b>${fv(i, vals[i])}</b><i>${d > 0 ? '▲' + d : d < 0 ? '▼' + (-d) : '–'}</i></span>`;
+    }).join('')}</div>`;
+    // Will he still be there? Compare his ADP to the pick you'd wait for.
+    const mineNow = S.onClock && S.onClock.team === MY_TEAM;
+    const waitPick = mineNow ? myPickAfter(cur) : next;   // on the clock: your following pick; otherwise: your next pick
+    let tag = '';
+    if (p.adp < cur - 12) tag = `<span class="tag fall">Faller</span>`;
+    else if (waitPick) {
+      const gap = p.adp - waitPick;
+      if (gap >= 6) tag = `<span class="tag safe">Likely there</span>`;
+      else if (gap >= -6) tag = `<span class="tag flip">Maybe there</span>`;
+      else tag = `<span class="tag gone">Likely gone</span>`;
+    }
+    return `<div class="s"><div class="top"><div><span class="nm">${p.name}</span>${p.inj ? `<span class="inj">${p.inj}</span>` : ''}<div class="meta">${p.pos} · ${p.team}${p.src === 'live' ? '' : p.src === 'saved' ? ' · saved proj' : ' · last season'} · ADP ${p.adp < 900 ? p.adp.toFixed(0) : '–'}</div></div>${tag}</div>${cells}</div>`;
+  }
   function render() {
     dirty = false; if (!root) return;
+    // an innerHTML rewrite drops focus/cursor, so save and restore them around it if the search box is active
+    const active = root.contains(document.activeElement) ? document.activeElement : null;
+    const searchFocused = active && active.id === 'fh-search';
+    const selStart = searchFocused ? active.selectionStart : null, selEnd = searchFocused ? active.selectionEnd : null;
+
     root.classList.toggle('min', S.collapsed);
     const next = myNextPick();
     const cur = S.onClock ? S.onClock.pick : S.picks.size + 1;
@@ -310,35 +359,25 @@
     const base = analyze();
     const grid = CATS.map((c, i) => `<div class="row"><span class="cn">${c}</span><span class="val">${fmt(i, base.my[i])}</span><span class="rk ${cls(base.ranks[i])}" >#${base.ranks[i]}</span></div>`).join('');
     const colHead = `<div class="strip hdr"><span class="nh" title="Net rank change across all 9 categories">Net</span>${SHORT.map((s, i) => `<span class="${cls(base.ranks[i])}t">${s}</span>`).join('')}</div>`;
-    const sug = suggestions(base).map(({ p, moves }) => {
-      const byCat = {}; (moves || []).forEach(x => byCat[x[0]] = x);
-      const net = (moves || []).reduce((s, x) => s + x[3], 0);
-      const L = p.line;
-      const vals = [L.fgp, L.ftp, L.tpm, L.pts, L.reb, L.ast, L.stl, L.blk, L.to]; // per game (projected season ÷ projected games)
-      const fv = (i, v) => i < 2 ? v.toFixed(3).replace(/^0/, '') : v.toFixed(1);
-      const cells = `<div class="strip">${'<span class="net ' + (net > 0 ? 'up' : net < 0 ? 'dn' : 'nt') + '">' + (net > 0 ? '+' : '') + net + '</span>'}${CATS.map((c, i) => {
-        const x = byCat[c]; const d = x ? x[3] : 0;
-        const title = `${c}: ${fv(i, vals[i])} per game${x ? ` · your rank #${x[1]} → #${x[2]}` : ' · no rank change'}`;
-        return `<span class="cell ${d > 0 ? 'up' : d < 0 ? 'dn' : 'nt'}" title="${title}"><b>${fv(i, vals[i])}</b><i>${d > 0 ? '▲' + d : d < 0 ? '▼' + (-d) : '–'}</i></span>`;
-      }).join('')}</div>`;
-      // Will he still be there? Compare his ADP to the pick you'd wait for.
-      const mineNow = S.onClock && S.onClock.team === MY_TEAM;
-      const waitPick = mineNow ? myPickAfter(cur) : next;   // on the clock: your following pick; otherwise: your next pick
-      let tag = '';
-      if (p.adp < cur - 12) tag = `<span class="tag fall">Faller</span>`;
-      else if (waitPick) {
-        const gap = p.adp - waitPick;
-        if (gap >= 6) tag = `<span class="tag safe">Likely there</span>`;
-        else if (gap >= -6) tag = `<span class="tag flip">Maybe there</span>`;
-        else tag = `<span class="tag gone">Likely gone</span>`;
-      }
-      return `<div class="s"><div class="top"><div><span class="nm">${p.name}</span>${p.inj ? `<span class="inj">${p.inj}</span>` : ''}<div class="meta">${p.pos} · ${p.team}${p.src === 'live' ? '' : p.src === 'saved' ? ' · saved proj' : ' · last season'} · ADP ${p.adp < 900 ? p.adp.toFixed(0) : '–'}</div></div>${tag}</div>${cells}</div>`;
-    }).join('');
+    const sug = suggestions(base).map(({ p, moves }) => playerCard(p, moves, cur, next)).join('');
+    const q = S.query.trim();
+    const results = q ? searchResults(base) : [];
+    const searchBody = !q ? '' : results.length
+      ? colHead + results.map(({ p, moves }) => playerCard(p, moves, cur, next)).join('')
+      : `<div class="empty">No available players match "${escHtml(q)}".</div>`;
     root.innerHTML = head + `<div class="bd">
       <div><div class="sec"><span>Category ranks (of 12)</span><span>${base.count}/13</span></div>
       <div class="grid">${grid}</div></div>
+      <div><div class="sec"><span>Search players</span></div>
+      <input id="fh-search" type="search" autocomplete="off" placeholder="Player name…" value="${escHtml(S.query)}">
+      ${searchBody}</div>
       <div><div class="sec"><span>Next pick</span><span class="seg"><button data-mode="fit" class="${S.mode === 'fit' ? 'on' : ''}">Best fit</button><button data-mode="bpa" class="${S.mode === 'bpa' ? 'on' : ''}">Best available</button></span></div>
       ${colHead}${sug}</div></div>`;
+
+    if (searchFocused) {
+      const inp = root.querySelector('#fh-search');
+      if (inp) { inp.focus(); try { inp.setSelectionRange(selStart, selEnd); } catch (e) {} }
+    }
   }
 
   // wait for the draft room to finish its own login handshake before asking for player data
