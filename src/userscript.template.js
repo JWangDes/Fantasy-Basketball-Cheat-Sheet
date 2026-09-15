@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.16
+// @version      1.17
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -125,12 +125,22 @@
         const k = keyOf(ini, rest.join(' ')) + '|' + tm;
         (projByKey.get(k) || projByKey.set(k, []).get(k)).push([pos, pr]);
       });
-      const xrankByKey = new Map(); // same key, independent of which projection source won
-      XRANK.forEach(([n, tm, xr]) => { const [ini, ...rest] = n.split(' '); xrankByKey.set(keyOf(ini, rest.join(' ')) + '|' + tm, xr); });
+      const xrankByKey = new Map(); // "initial last|TEAM" -> [[pos, xRank], ...]
+      XRANK.forEach(([n, tm, pos, xr]) => {
+        const [ini, ...rest] = n.split(' ');
+        const k = keyOf(ini, rest.join(' ')) + '|' + tm;
+        (xrankByKey.get(k) || xrankByKey.set(k, []).get(k)).push([pos, xr]);
+      });
+      // Jalen and Jaylin Williams are both "J. Williams|OKC". A lone candidate is only safe when the key is
+      // unambiguous on Yahoo's side too — the xRank table stops at ~150, so the backup can inherit the starter's
+      // rank and vault into Best available. When in doubt match on position, and match nothing before the wrong man.
+      const keyCount = new Map();
+      list.forEach(y => { const k = keyOf(y.fname || '?', y.lname || '') + '|' + y.team_abbr; keyCount.set(k, (keyCount.get(k) || 0) + 1); });
+      const pick = (cands, k, pos) => (cands.length === 1 && keyCount.get(k) === 1) ? cands[0] : cands.find(c => c[0] === pos);
       list.forEach(y => {
         const ss = y.season_stats || {}; const num = k => parseFloat(ss[k]);
-        const cands = projByKey.get(keyOf(y.fname || '?', y.lname || '') + '|' + y.team_abbr) || [];
-        const hit = cands.length === 1 ? cands[0] : cands.find(c => c[0] === y.display_pos); // same name + team: match by position
+        const pkey = keyOf(y.fname || '?', y.lname || '') + '|' + y.team_abbr;
+        const hit = pick(projByKey.get(pkey) || [], pkey, y.display_pos);
         const pr = hit ? hit[1] : null;
         const lastGP = num('0') || 0;
         const ps = y.projected_stats || {}; const pj = k => parseFloat(ps[k]); const pGP = pj('0') || 0;
@@ -156,7 +166,8 @@
         }
         if (line) ['fgp', 'ftp'].forEach(f => { if (!(line[f] > 0)) line[f] = f === 'fgp' ? 0.46 : 0.78; });
         const adp = effectiveAdp(y);
-        const xrank = xrankByKey.get(keyOf(y.fname || '?', y.lname || '') + '|' + y.team_abbr) ?? null;
+        const xhit = pick(xrankByKey.get(pkey) || [], pkey, y.display_pos);
+        const xrank = xhit ? xhit[1] : null;
         S.players.set(+y.id, {
           id: +y.id, name: `${(y.fname || '')[0] || ''}. ${y.lname}`, full: `${y.fname} ${y.lname}`, team: y.team_abbr, pos: y.display_pos || '',
           inj: y.inj || '', adp, xrank, value: xrank != null ? XR_W * xrank + (1 - XR_W) * adp : adp, line, src

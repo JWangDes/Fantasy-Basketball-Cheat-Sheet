@@ -16,7 +16,7 @@ for (const line of fs.readFileSync('docs/player-data.md', 'utf8').split('\n')) {
   const c = line.split('|').map(s => s.trim());
   const xr = parseFloat(c[1]);
   if (!(xr > 0)) continue;
-  xrank.push([c[2].replace(/\s*\(R\)\s*$/, ''), c[4], xr]);
+  xrank.push([c[2].replace(/\s*\(R\)\s*$/, ''), c[4], c[3], xr]);
 }
 if (xrank.length < 100) throw new Error(`only parsed ${xrank.length} xRanks from docs/player-data.md — has the table format changed?`);
 

@@ -17,7 +17,15 @@ const popEls=[];let popWin=null;
 global.open=()=>{const l={};popWin={closed:false,document:mkDoc(popEls),setTimeout:(f,ms)=>setTimeout(f,ms),setInterval:()=>0,
   addEventListener(t,f){(l[t]=l[t]||[]).push(f)},_emit(t,e){(l[t]||[]).forEach(f=>f(e))},close(){this.closed=true}};return popWin};
 const proj=JSON.parse(fs.readFileSync('src/proj.json','utf8'));
-const players=proj.slice(0,160).map((r,i)=>{const [ini,...rest]=r[0].split(' ');return {id:i+1,fname:ini.replace('.','')+'x',lname:rest.join(' '),team_abbr:r[1],display_pos:r[2],inj:i%17==0?'GTD':'','average-pick':String(i==50?20:i==60?120:i+1),'percent-drafted':i==40?'0.02':'1.0',o_rank:i+1,season_stats:{},projected_stats:(i%2?{}:(()=>{const p=r[3]||[],g=p[0]||70;const fga=15*g,fta=5*g;return {0:g,3:fga,4:fga*(p[1]||.47),5:p[1],6:fta,7:fta*(p[2]||.78),8:p[2],10:p[3]*g,12:p[4]*g,15:p[5]*g,16:p[6]*g,17:p[7]*g,18:p[8]*g,19:p[9]*g}})())}});
+const pkey=r=>{const [ini,...rest]=r[0].split(' ');return ini[0].toLowerCase()+' '+rest.join(' ').toLowerCase()+'|'+r[1]};
+const head=proj.slice(0,160), seenKeys=new Set(head.map(pkey));
+// pull in same-name teammates from further down (e.g. Jaylin Williams at 201) so the fixture has the real collisions
+const players=[...head,...proj.slice(160).filter(r=>seenKeys.has(pkey(r)))].map((r,i)=>{const [ini,...rest]=r[0].split(' ');return {id:i+1,fname:ini.replace('.','')+'x',lname:rest.join(' '),team_abbr:r[1],display_pos:r[2],inj:i%17==0?'GTD':'','average-pick':String(i==50?20:i==60?120:i+1),'percent-drafted':i==40?'0.02':'1.0',o_rank:i+1,season_stats:{},projected_stats:(i%2?{}:(()=>{const p=r[3]||[],g=p[0]||70;const fga=15*g,fta=5*g;return {0:g,3:fga,4:fga*(p[1]||.47),5:p[1],6:fta,7:fta*(p[2]||.78),8:p[2],10:p[3]*g,12:p[4]*g,15:p[5]*g,16:p[6]*g,17:p[7]*g,18:p[8]*g,19:p[9]*g}})())}});
+// the real collision: Jalen (SF,PF) and Jaylin (PF,C) Williams are both "J. Williams|OKC", but only the
+// starter is in the xRank table — the backup must not inherit his rank or his projection
+const jalen=players.find(p=>p.lname==='Williams'&&p.team_abbr==='OKC'&&p.display_pos==='SF,PF');
+const jaylin=players.find(p=>p.lname==='Williams'&&p.team_abbr==='OKC'&&p.display_pos==='PF,C');
+if(!jalen||!jaylin) throw new Error('fixture: expected two J. Williams on OKC in proj.json');
 const builtVersion=(code.match(/@version\s+(\S+)/)||[])[1];
 const fakeNewerVersion=builtVersion+'.1'; // simulates a newer push to GitHub, to exercise the update banner
 global.fetch=async(url)=>{
@@ -50,6 +58,14 @@ setTimeout(()=>{
     }
     els[0]._emit('input',{target:{id:'fh-search',value:''}});
     if(!/xRk \d/.test(els[0].innerHTML)) throw new Error('xRank did not reach the player cards');
+    // the backup Williams must show no xRank at all rather than the starter's
+    els[0]._emit('input',{target:{id:'fh-search',value:'williams'}});
+    const cards=els[0].innerHTML.split('<div class="s">').slice(1);
+    const backup=cards.find(c=>c.includes('PF,C · OKC'));
+    if(!backup) throw new Error(`collision: backup J. Williams (PF,C · OKC) missing from search results`);
+    if(/xRk \d/.test(backup)) throw new Error('collision: backup J. Williams inherited the starter\'s xRank');
+    const starter=cards.find(c=>c.includes('SF,PF · OKC'));
+    if(!starter||!/xRk 3\d/.test(starter)) throw new Error('collision: starter J. Williams lost his own xRank');
     // pop out into its own window, then close it and make sure the inline panel comes back
     const click=(el,act)=>el._emit('click',{target:{closest:s=>s==='button'?{dataset:{act}}:null}});
     click(els[0],'pop');
