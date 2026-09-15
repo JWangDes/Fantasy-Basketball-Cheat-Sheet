@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.17
+// @version      1.18
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -18,7 +18,7 @@
   // ---------- multi-source consensus rank (top ~150), from docs/player-data.md: [name, team, xRank] ----------
   const XRANK = [["N. Jokić","DEN","C",1.5],["V. Wembanyama","SAS","C",1.5],["L. Dončić","LAL","PG,SG",3.5],["S. Gilgeous-Alexander","OKC","PG",3.8],["C. Cunningham","DET","PG,SG",5.5],["G. Antetokounmpo","MIA","PF,C",6.3],["J. Tatum","BOS","SF,PF",7.8],["A. Edwards","MIN","PG,SG",8.3],["J. Johnson","ATL","SF,PF",9.3],["C. Flagg","DAL","SG,SF,PF",10],["D. Mitchell","CLE","PG,SG",12.8],["S. Barnes","TOR","SF,PF,C",13],["T. Maxey","PHI","PG",14.8],["K. Towns","NYK","PF,C",17.3],["A. Şengün","HOU","PF,C",18.3],["T. Haliburton","IND","PG,SG",19.5],["A. Thompson","HOU","PG,SG",20.5],["A. Reaves","LAL","PG,SG,SF",22.3],["T. Young","WAS","PG",22.8],["K. Durant","HOU","SG,SF,PF",23.5],["E. Mobley","CLE","PF,C",24],["J. Brunson","NYK","PG",24.5],["J. Murray","DEN","PG",25],["B. Adebayo","MIA","PF,C",25],["J. Giddey","CHI","PG,SG",26],["A. Davis","WAS","PF,C",27.8],["D. Booker","PHX","PG,SG",29],["S. Curry","GSW","PG",30.5],["D. Sabonis","SAC","PF,C",30.5],["D. Avdija","POR","SG,SF,PF",31.3],["J. Harden","CLE","PG,SG",31.8],["C. Holmgren","OKC","PF,C",33],["L. Ball","MIN","PG",34.5],["W. Kessler","LAL","C",34.5],["J. Williams","OKC","SF,PF",35.5],["J. Duren","DET","C",35.5],["P. Banchero","ORL","PF",36],["T. Murphy III","NOP","SG,SF",37],["J. Brown","PHI","SG,SF,PF",41],["B. Miller","CHA","SF,PF",41.5],["K. Knueppel","CHA","SG,SF",41.5],["D. Clingan","POR","C",43.3],["L. Markkanen","UTA","SF,PF",44.5],["P. Siakam","IND","PF,C",45.8],["F. Wagner","ORL","SF,PF",45.8],["D. White","BOS","PG,SG",47.8],["K. Leonard","TOR","SG,SF,PF",48.3],["T. Herro","MIL","PG,SG",49.5],["O. Okongwu","ATL","C",50],["J. Randle","BKN","PF",53.5],["D. Daniels","ATL","SG,SF",54],["D. Garland","LAC","PG",55.8],["R. Rollins","MIL","PG,SG",55.8],["J. Jackson Jr.","UTA","PF,C",56.3],["N. Alexander-Walker","ATL","PG,SG",56.8],["S. Castle","SAS","PG,SG",57.5],["K. Irving","DAL","PG",58],["L. James","PHI","SF,PF",58.3],["D. Bane","ORL","SG,SF",58.8],["C. Boozer","MEM","PF",58.8],["M. Buzelis","CHI","SF,PF",59],["K. George","UTA","PG,SG",59.5],["M. Porter Jr.","BKN","SF,PF",63],["D. Murray","NOP","PG",64.5],["K. Ware","MIL","C",65.5],["J. Embiid","PHI","C",66.5],["Z. Williamson","NOP","PF,C",67.3],["A. Sarr","WAS","C",67.5],["I. Zubac","IND","C",68.3],["N. Reid","CHA","PF,C",70],["B. Ingram","LAC","SG,SF,PF",70.5],["P. Pritchard","BOS","PG",71],["D. Queen","NOP","PF,C",71.5],["D. Fox","SAS","PG",71.8],["Z. Edey","MEM","C",71.8],["V. Edgecombe","PHI","PG,SG",74.3],["J. McDaniels","MIN","SF",75.3],["O. Anunoby","NYK","SF,PF",76],["Mikal Bridges","NYK","SF,PF",79.3],["R. Gobert","MIN","C",81],["C. White","CHA","PG,SG",81.5],["C. Wilson","CHI","PF",81.5],["D. Harper","SAS","PG,SG",85.3],["A. Dybantsa","WAS","SF",85.3],["J. Allen","CLE","C",87.5],["C. Coward","MEM","SG,SF",88],["I. Quickley","TOR","PG,SG",90],["T. Jerome","MEM","PG,SG",90.5],["D. Lillard","POR","PG",90.8],["D. Peterson","UTA","SG",90.8],["Miles Bridges","PHX","PF",91.8],["J. Hart","NYK","SG,SF",92.5],["N. Claxton","CHI","C",95],["D. Sharpe","BKN","C",96.5],["Ausar Thompson","DET","SG,SF,PF",96.5],["J. Morant","POR","PG",99.5],["J. Smith Jr.","HOU","PF,C",99.5],["A. Wiggins","MIA","SG,SF,PF",100.5],["J. Green","PHX","SG,SF",101.5],["N. Powell","CHI","SG,SF",102],["P. George","BOS","SF,PF",102.5],["J. Suggs","ORL","PG,SG",104],["C. McCollum","ATL","PG,SG",104.5],["D. Acuff Jr.","SAC","PG",105.5],["M. Turner","MIL","C",106.3],["J. Jaquez Jr.","MIL","SG,SF,PF",107.8],["B. Podziemski","GSW","PG,SG",108.8],["K. George","WAS","SG,SF,PF",110.3],["A. Dosunmu","MIN","PG,SG",111.3],["R. Barrett","TOR","SG,SF,PF",111.5],["K. Murray","SAC","SF,PF",113],["T. Camara","POR","SF,PF",113.5],["I. Hartenstein","OKC","C",116.5],["K. Porter Jr.","MIL","PG,SG",119],["R. Sheppard","HOU","PG,SG",120.8],["S. Bey","NOP","SF,PF",121],["Davion Mitchell","MIA","PG",121],["A. Black","ORL","PG,SG,SF",121.5],["J. Nurkić","UTA","C",121.8],["C. Murray-Boyles","TOR","PF,C",124],["N. Queta","BOS","C",124.5],["Q. Grimes","LAL","SG,SF",124.8],["Y. Lendeborg","GSW","PF",125],["J. Collins","DET","PF,C",125.3],["J. Fears","NOP","PG,SG",126.3],["S. Mamukelashvili","LAL","PF,C",127.8],["P. Watson","CLE","SF,PF",128.5],["C. Braun","DEN","SG,SF,PF",129.3],["M. Raynaud","SAC","C",131.3],["W. Carter Jr.","ORL","C",132.8],["K. Maluach","PHX","C",134],["A. Mitchell","OKC","PG,SG",134.3],["E. Dëmin","BKN","PG,SG",134.3],["C. Gillespie","PHX","PG,SG",134.8],["A. Nembhard","IND","PG,SG",136.3],["F. VanVleet","HOU","PG",136.8],["K. Wagler","LAC","SG",137.3],["Z. LaVine","SAC","PG,SG,SF",138.8],["M. Brown Jr.","BKN","PG",139],["I. Stewart","MEM","PF,C",139.5],["P. Washington","DAL","PF,C",140.5],["M. Williams","PHX","C",140.5],["A. Gordon","DEN","PF,C",141.8],["J. Butler III","GSW","SF,PF",142],["D. DeRozan","DEN","SF,PF",142.8],["A. Bailey","UTA","SF,PF",143.3],["J. Holiday","POR","PG,SG",144.5],["C. Sexton","LAL","PG,SG",145.5],["C. Wallace","OKC","PG,SG,SF",145.8],["D. Vassell","SAS","SG,SF",146.8],["K. Filipowski","UTA","PF,C",147.5]];
   const XR_W = 0.7; // draft order = 70% consensus value + 30% live market ADP; below ~150 there's no xRank, so ADP alone
-  const CURRENT_VERSION = "1.17";
+  const CURRENT_VERSION = "1.18";
   const RAW_URL = 'https://raw.githubusercontent.com/JWangDes/Fantasy-Basketball-Cheat-Sheet/main/jasons-cheat-sheet.user.js';
 
   const CATS = ['FG%', 'FT%', '3PM', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'TO'];
@@ -283,9 +283,12 @@
     return availablePlayers().filter(p => searchNorm(p.full + ' ' + p.name).includes(q))
       .sort((a, b) => a.value - b.value).slice(0, 15).map(p => ({ p, ...evaluate(p, base) }));
   }
-  function myPickAfter(n) { // first of my picks with number > n
-    if (!S.order.length) return null;
-    for (let i = n; i < S.order.length; i++) if (S.order[i] === MY_TEAM) return i + 1;
+  // First pick after my current run of consecutive picks. At a back-to-back (48/49) the next pick is my own,
+  // so "will he last?" against it is trivially yes — the real horizon is the next turn, 72.
+  function myNextTurn(n) {
+    let i = n - 1;
+    while (i < S.order.length && S.order[i] === MY_TEAM) i++;
+    for (; i < S.order.length; i++) if (S.order[i] === MY_TEAM) return i + 1;
     return null;
   }
   function myNextPick() {
@@ -425,7 +428,7 @@
     }).join('')}</div>`;
     // Will he still be there? Compare his ADP to the pick you'd wait for.
     const mineNow = S.onClock && S.onClock.team === MY_TEAM;
-    const waitPick = mineNow ? myPickAfter(cur) : next;   // on the clock: your following pick; otherwise: your next pick
+    const waitPick = mineNow ? myNextTurn(cur) : next;   // on the clock: your next turn; otherwise: your next pick
     let tag = '';
     if (p.adp < cur - 12) tag = `<span class="tag fall">Faller</span>`;
     else if (waitPick) {

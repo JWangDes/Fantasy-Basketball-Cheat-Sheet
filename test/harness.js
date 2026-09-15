@@ -66,6 +66,17 @@ setTimeout(()=>{
     if(/xRk \d/.test(backup)) throw new Error('collision: backup J. Williams inherited the starter\'s xRank');
     const starter=cards.find(c=>c.includes('SF,PF · OKC'));
     if(!starter||!/xRk 3\d/.test(starter)) throw new Error('collision: starter J. Williams lost his own xRank');
+    // on the clock at 48 (back-to-back with 49): the horizon is the next turn at 72, not your own pick at 49,
+    // so a player around ADP 60 must read "Likely gone" rather than "Likely there"
+    ws.emit('message',new MessageEvent(ws,'D|48|12|105'));
+    await new Promise(r=>setTimeout(r,300));
+    const near=players.findIndex(p=>p['average-pick']==='60');
+    els[0]._emit('input',{target:{id:'fh-search',value:players[near].lname.slice(0,4).toLowerCase()}});
+    const card=els[0].innerHTML.split('<div class="s">').slice(1).find(c=>c.includes(players[near].lname));
+    if(!card) throw new Error('back-to-back tag: fixture player not found');
+    if(/Likely there/.test(card)) throw new Error('back-to-back tag: ADP 60 read "Likely there" at pick 48 — compared against your own pick 49 instead of the next turn at 72');
+    if(!/Likely gone/.test(card)) throw new Error('back-to-back tag: expected "Likely gone" for ADP 60 measured against pick 72');
+    els[0]._emit('input',{target:{id:'fh-search',value:''}});
     // pop out into its own window, then close it and make sure the inline panel comes back
     const click=(el,act)=>el._emit('click',{target:{closest:s=>s==='button'?{dataset:{act}}:null}});
     click(els[0],'pop');

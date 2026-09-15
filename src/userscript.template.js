@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.17
+// @version      1.18
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -283,9 +283,12 @@
     return availablePlayers().filter(p => searchNorm(p.full + ' ' + p.name).includes(q))
       .sort((a, b) => a.value - b.value).slice(0, 15).map(p => ({ p, ...evaluate(p, base) }));
   }
-  function myPickAfter(n) { // first of my picks with number > n
-    if (!S.order.length) return null;
-    for (let i = n; i < S.order.length; i++) if (S.order[i] === MY_TEAM) return i + 1;
+  // First pick after my current run of consecutive picks. At a back-to-back (48/49) the next pick is my own,
+  // so "will he last?" against it is trivially yes — the real horizon is the next turn, 72.
+  function myNextTurn(n) {
+    let i = n - 1;
+    while (i < S.order.length && S.order[i] === MY_TEAM) i++;
+    for (; i < S.order.length; i++) if (S.order[i] === MY_TEAM) return i + 1;
     return null;
   }
   function myNextPick() {
@@ -425,7 +428,7 @@
     }).join('')}</div>`;
     // Will he still be there? Compare his ADP to the pick you'd wait for.
     const mineNow = S.onClock && S.onClock.team === MY_TEAM;
-    const waitPick = mineNow ? myPickAfter(cur) : next;   // on the clock: your following pick; otherwise: your next pick
+    const waitPick = mineNow ? myNextTurn(cur) : next;   // on the clock: your next turn; otherwise: your next pick
     let tag = '';
     if (p.adp < cur - 12) tag = `<span class="tag fall">Faller</span>`;
     else if (waitPick) {
