@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.10
+// @version      1.11
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -15,13 +15,26 @@
 
   // ---------- 2026-27 projections: [name, team, pos, [GP,FG%,FT%,3PM,PTS,REB,AST,STL,BLK,TO]] ----------
   const PROJ = __PROJ__;
+  const CURRENT_VERSION = __VERSION__;
+  const RAW_URL = 'https://raw.githubusercontent.com/JWangDes/Fantasy-Basketball-Cheat-Sheet/main/jasons-cheat-sheet.user.js';
 
   const CATS = ['FG%', 'FT%', '3PM', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'TO'];
   const ROSTER = 13;
   const m = location.pathname.match(/draftclient\/nba\/(\d+)\/(\d+)/);
   const LEAGUE = m ? m[1] : null, MY_TEAM = m ? +m[2] : null;
 
-  const S = { picks: new Map(), onClock: null, order: [], players: new Map(), ready: false, err: null, mode: 'fit', collapsed: false, query: '' };
+  const S = { picks: new Map(), onClock: null, order: [], players: new Map(), ready: false, err: null, mode: 'fit', collapsed: false, query: '', newVersion: null };
+
+  // ---------- 0. check GitHub for a newer version as soon as the draft room opens ----------
+  async function checkForUpdate() {
+    try {
+      const r = await fetch(RAW_URL + '?t=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) return;
+      const text = await r.text();
+      const v = (text.match(/@version\s+(\S+)/) || [])[1];
+      if (v && v !== CURRENT_VERSION) { S.newVersion = v; schedule(); }
+    } catch (e) {} // offline / blocked: silently skip, Tampermonkey's own periodic check still applies
+  }
 
   // ---------- 1. listen to the draft server ----------
   function handle(line) {
@@ -289,7 +302,9 @@
   #fh input[type=search]{width:100%;background:#161b21;border:1px solid #2f3842;border-radius:6px;color:#e9edf1;padding:6px 10px;font:inherit;font-size:13.5px;margin-top:6px}
   #fh input[type=search]::placeholder{color:#5c6672}
   #fh input[type=search]:focus-visible{outline:2px solid #e8a54c;outline-offset:1px}
-  #fh .empty{color:#9aa4af;font-size:13.5px;padding:8px 0}`;
+  #fh .empty{color:#9aa4af;font-size:13.5px;padding:8px 0}
+  #fh .upd{display:inline-block;margin-top:5px;color:#1b1207;background:#e8a54c;font-weight:700;font-size:12.5px;padding:2px 7px;border-radius:4px;text-decoration:none}
+  #fh .upd:hover{filter:brightness(1.08)}`;
   let root, dirty = false;
   function schedule() { if (!dirty) { dirty = true; setTimeout(render, 150); } }
   function mount() {
@@ -354,7 +369,8 @@
     const next = myNextPick();
     const cur = S.onClock ? S.onClock.pick : S.picks.size + 1;
     const status = `${S.picks.size ? S.picks.size + ' picks' : (DOM_MINE.size ? 'your roster only' : '0 picks')}${S.onClock ? ` · #${S.onClock.pick} on clock` : ''}${next ? ` · you #${next}` : ''}${S.ready ? '' : ' · ' + (S.err || 'loading…')}`;
-    const head = `<div class="hd"><div><div class="ttl">Jason's <b>Cheat Sheet</b></div><div class="sub">${status}</div></div><button class="ic" data-act="min" title="${S.collapsed ? 'Expand' : 'Minimize'}" aria-label="${S.collapsed ? 'Expand' : 'Minimize'}">${S.collapsed ? ICON_MAX : ICON_MIN}</button></div>`;
+    const updateBanner = S.newVersion ? `<a class="upd" href="${RAW_URL}" target="_blank" rel="noopener">v${escHtml(S.newVersion)} available — click to update</a>` : '';
+    const head = `<div class="hd"><div><div class="ttl">Jason's <b>Cheat Sheet</b></div><div class="sub">${status}</div>${updateBanner}</div><button class="ic" data-act="min" title="${S.collapsed ? 'Expand' : 'Minimize'}" aria-label="${S.collapsed ? 'Expand' : 'Minimize'}">${S.collapsed ? ICON_MAX : ICON_MIN}</button></div>`;
     if (!S.ready || !AVG) { root.innerHTML = head; return; }
     const base = analyze();
     const grid = CATS.map((c, i) => `<div class="row"><span class="cn">${c}</span><span class="val">${fmt(i, base.my[i])}</span><span class="rk ${cls(base.ranks[i])}" >#${base.ranks[i]}</span></div>`).join('');
@@ -380,6 +396,7 @@
     }
   }
 
+  checkForUpdate();
   // wait for the draft room to finish its own login handshake before asking for player data
   setTimeout(() => loadPlayers(), 2500);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount); else mount();

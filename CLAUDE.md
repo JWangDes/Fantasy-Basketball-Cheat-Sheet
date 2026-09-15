@@ -14,7 +14,7 @@ User preferences: main points, no fluff. Say "I don't know" and verify when unce
 ## Files
 - `src/userscript.template.js` — the source. Edit this, never the built file.
 - `src/proj.json` — saved projections for 250 players: `[name, team, pos, [GP, FG%, FT%, 3PM, PTS, REB, AST, STL, BLK, TO]]` per game. Fallback only.
-- `build.js` — replaces `__PROJ__` in the template with proj.json and writes `jasons-cheat-sheet.user.js`.
+- `build.js` — replaces `__PROJ__` with proj.json and `__VERSION__` with the template's `@version`, writes `jasons-cheat-sheet.user.js`.
 - `jasons-cheat-sheet.user.js` — built output that Jason pastes into Tampermonkey. Commit it.
 - `test/harness.js` — Node simulation (stub DOM, WebSocket, fetch); writes `test/panel.html`.
 - `docs/` — copies of the claude.ai Project docs (strategy, draft plan, player data). Source of truth is the Project; recopy when they change.
