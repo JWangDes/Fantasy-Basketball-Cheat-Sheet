@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.14
+// @version      1.15
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -315,10 +315,10 @@
   #fh .net.nt{color:#9aa4af;background:#1b2128}
   #fh .up{color:#6fd184}#fh .dn{color:#ee7a6c}
   #fh .s{padding:8px 0;border-top:1px solid #222a32}
-  #fh .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-  #fh .who{min-width:0}#fh .pt{color:#9aa4af;font-size:13px}
-  #fh .side{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;flex:0 0 auto}
-  #fh .side .meta{white-space:nowrap}
+  #fh .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  #fh .who{min-width:0}#fh .pt{color:#9aa4af;font-size:13.5px}
+  #fh .side{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:0 0 auto}
+  #fh .nums{display:flex;align-items:center;gap:6px;white-space:nowrap}
   #fh .nm{font-weight:650;font-size:14.5px}#fh .meta{color:#9aa4af;font-size:13.5px}
   #fh .tag{font-size:13px;font-weight:600;border-radius:4px;padding:1px 6px;white-space:nowrap}
   #fh .q:focus-visible{outline:2px solid #e8a54c}
@@ -390,9 +390,9 @@
     const gapTag = Math.abs(vgap) < 8 ? ''
       : `<span class="vg ${vgap > 0 ? 'up' : 'dn'}" title="ADP ${p.adp.toFixed(0)} vs consensus xRank ${p.xrank.toFixed(0)}">${vgap > 0 ? '+' + vgap.toFixed(0) + ' value' : vgap.toFixed(0) + ' reach'}</span>`;
     const src = p.src === 'live' ? '' : p.src === 'saved' ? ' · saved proj' : ' · last season';
-    const who = `<div class="who"><span class="nm">${p.name}</span> <span class="pt">${p.pos} · ${p.team}${src}</span>${p.inj ? `<span class="inj">${p.inj}</span>` : ''}</div>`;
+    const who = `<div class="who"><div><span class="nm">${p.name}</span>${p.inj ? `<span class="inj">${p.inj}</span>` : ''}</div><div class="pt">${p.pos} · ${p.team}${src}</div></div>`;
     const nums = `<span class="meta">ADP ${p.adp < 900 ? p.adp.toFixed(0) : '–'}${p.xrank != null ? ` · xRk ${p.xrank.toFixed(0)}` : ''}</span>`;
-    return `<div class="s"><div class="top">${who}<div class="side">${nums}${gapTag}${tag}</div></div>${cells}</div>`;
+    return `<div class="s"><div class="top">${who}<div class="side">${tag}<div class="nums">${nums}${gapTag}</div></div></div>${cells}</div>`;
   }
   function render() {
     dirty = false; if (!root) return;

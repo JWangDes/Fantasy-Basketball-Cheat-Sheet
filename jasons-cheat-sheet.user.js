@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.14
+// @version      1.15
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -18,7 +18,7 @@
   // ---------- multi-source consensus rank (top ~150), from docs/player-data.md: [name, team, xRank] ----------
   const XRANK = [["N. Jokić","DEN",1.5],["V. Wembanyama","SAS",1.5],["L. Dončić","LAL",3.5],["S. Gilgeous-Alexander","OKC",3.8],["C. Cunningham","DET",5.5],["G. Antetokounmpo","MIA",6.3],["J. Tatum","BOS",7.8],["A. Edwards","MIN",8.3],["J. Johnson","ATL",9.3],["C. Flagg","DAL",10],["D. Mitchell","CLE",12.8],["S. Barnes","TOR",13],["T. Maxey","PHI",14.8],["K. Towns","NYK",17.3],["A. Şengün","HOU",18.3],["T. Haliburton","IND",19.5],["A. Thompson","HOU",20.5],["A. Reaves","LAL",22.3],["T. Young","WAS",22.8],["K. Durant","HOU",23.5],["E. Mobley","CLE",24],["J. Brunson","NYK",24.5],["J. Murray","DEN",25],["B. Adebayo","MIA",25],["J. Giddey","CHI",26],["A. Davis","WAS",27.8],["D. Booker","PHX",29],["S. Curry","GSW",30.5],["D. Sabonis","SAC",30.5],["D. Avdija","POR",31.3],["J. Harden","CLE",31.8],["C. Holmgren","OKC",33],["L. Ball","MIN",34.5],["W. Kessler","LAL",34.5],["J. Williams","OKC",35.5],["J. Duren","DET",35.5],["P. Banchero","ORL",36],["T. Murphy III","NOP",37],["J. Brown","PHI",41],["B. Miller","CHA",41.5],["K. Knueppel","CHA",41.5],["D. Clingan","POR",43.3],["L. Markkanen","UTA",44.5],["P. Siakam","IND",45.8],["F. Wagner","ORL",45.8],["D. White","BOS",47.8],["K. Leonard","TOR",48.3],["T. Herro","MIL",49.5],["O. Okongwu","ATL",50],["J. Randle","BKN",53.5],["D. Daniels","ATL",54],["D. Garland","LAC",55.8],["R. Rollins","MIL",55.8],["J. Jackson Jr.","UTA",56.3],["N. Alexander-Walker","ATL",56.8],["S. Castle","SAS",57.5],["K. Irving","DAL",58],["L. James","PHI",58.3],["D. Bane","ORL",58.8],["C. Boozer","MEM",58.8],["M. Buzelis","CHI",59],["K. George","UTA",59.5],["M. Porter Jr.","BKN",63],["D. Murray","NOP",64.5],["K. Ware","MIL",65.5],["J. Embiid","PHI",66.5],["Z. Williamson","NOP",67.3],["A. Sarr","WAS",67.5],["I. Zubac","IND",68.3],["N. Reid","CHA",70],["B. Ingram","LAC",70.5],["P. Pritchard","BOS",71],["D. Queen","NOP",71.5],["D. Fox","SAS",71.8],["Z. Edey","MEM",71.8],["V. Edgecombe","PHI",74.3],["J. McDaniels","MIN",75.3],["O. Anunoby","NYK",76],["Mikal Bridges","NYK",79.3],["R. Gobert","MIN",81],["C. White","CHA",81.5],["C. Wilson","CHI",81.5],["D. Harper","SAS",85.3],["A. Dybantsa","WAS",85.3],["J. Allen","CLE",87.5],["C. Coward","MEM",88],["I. Quickley","TOR",90],["T. Jerome","MEM",90.5],["D. Lillard","POR",90.8],["D. Peterson","UTA",90.8],["Miles Bridges","PHX",91.8],["J. Hart","NYK",92.5],["N. Claxton","CHI",95],["D. Sharpe","BKN",96.5],["Ausar Thompson","DET",96.5],["J. Morant","POR",99.5],["J. Smith Jr.","HOU",99.5],["A. Wiggins","MIA",100.5],["J. Green","PHX",101.5],["N. Powell","CHI",102],["P. George","BOS",102.5],["J. Suggs","ORL",104],["C. McCollum","ATL",104.5],["D. Acuff Jr.","SAC",105.5],["M. Turner","MIL",106.3],["J. Jaquez Jr.","MIL",107.8],["B. Podziemski","GSW",108.8],["K. George","WAS",110.3],["A. Dosunmu","MIN",111.3],["R. Barrett","TOR",111.5],["K. Murray","SAC",113],["T. Camara","POR",113.5],["I. Hartenstein","OKC",116.5],["K. Porter Jr.","MIL",119],["R. Sheppard","HOU",120.8],["S. Bey","NOP",121],["Davion Mitchell","MIA",121],["A. Black","ORL",121.5],["J. Nurkić","UTA",121.8],["C. Murray-Boyles","TOR",124],["N. Queta","BOS",124.5],["Q. Grimes","LAL",124.8],["Y. Lendeborg","GSW",125],["J. Collins","DET",125.3],["J. Fears","NOP",126.3],["S. Mamukelashvili","LAL",127.8],["P. Watson","CLE",128.5],["C. Braun","DEN",129.3],["M. Raynaud","SAC",131.3],["W. Carter Jr.","ORL",132.8],["K. Maluach","PHX",134],["A. Mitchell","OKC",134.3],["E. Dëmin","BKN",134.3],["C. Gillespie","PHX",134.8],["A. Nembhard","IND",136.3],["F. VanVleet","HOU",136.8],["K. Wagler","LAC",137.3],["Z. LaVine","SAC",138.8],["M. Brown Jr.","BKN",139],["I. Stewart","MEM",139.5],["P. Washington","DAL",140.5],["M. Williams","PHX",140.5],["A. Gordon","DEN",141.8],["J. Butler III","GSW",142],["D. DeRozan","DEN",142.8],["A. Bailey","UTA",143.3],["J. Holiday","POR",144.5],["C. Sexton","LAL",145.5],["C. Wallace","OKC",145.8],["D. Vassell","SAS",146.8],["K. Filipowski","UTA",147.5]];
   const XR_W = 0.7; // draft order = 70% consensus value + 30% live market ADP; below ~150 there's no xRank, so ADP alone
-  const CURRENT_VERSION = "1.14";
+  const CURRENT_VERSION = "1.15";
   const RAW_URL = 'https://raw.githubusercontent.com/JWangDes/Fantasy-Basketball-Cheat-Sheet/main/jasons-cheat-sheet.user.js';
 
   const CATS = ['FG%', 'FT%', '3PM', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'TO'];
@@ -315,10 +315,10 @@
   #fh .net.nt{color:#9aa4af;background:#1b2128}
   #fh .up{color:#6fd184}#fh .dn{color:#ee7a6c}
   #fh .s{padding:8px 0;border-top:1px solid #222a32}
-  #fh .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-  #fh .who{min-width:0}#fh .pt{color:#9aa4af;font-size:13px}
-  #fh .side{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;flex:0 0 auto}
-  #fh .side .meta{white-space:nowrap}
+  #fh .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  #fh .who{min-width:0}#fh .pt{color:#9aa4af;font-size:13.5px}
+  #fh .side{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:0 0 auto}
+  #fh .nums{display:flex;align-items:center;gap:6px;white-space:nowrap}
   #fh .nm{font-weight:650;font-size:14.5px}#fh .meta{color:#9aa4af;font-size:13.5px}
   #fh .tag{font-size:13px;font-weight:600;border-radius:4px;padding:1px 6px;white-space:nowrap}
   #fh .q:focus-visible{outline:2px solid #e8a54c}
@@ -390,9 +390,9 @@
     const gapTag = Math.abs(vgap) < 8 ? ''
       : `<span class="vg ${vgap > 0 ? 'up' : 'dn'}" title="ADP ${p.adp.toFixed(0)} vs consensus xRank ${p.xrank.toFixed(0)}">${vgap > 0 ? '+' + vgap.toFixed(0) + ' value' : vgap.toFixed(0) + ' reach'}</span>`;
     const src = p.src === 'live' ? '' : p.src === 'saved' ? ' · saved proj' : ' · last season';
-    const who = `<div class="who"><span class="nm">${p.name}</span> <span class="pt">${p.pos} · ${p.team}${src}</span>${p.inj ? `<span class="inj">${p.inj}</span>` : ''}</div>`;
+    const who = `<div class="who"><div><span class="nm">${p.name}</span>${p.inj ? `<span class="inj">${p.inj}</span>` : ''}</div><div class="pt">${p.pos} · ${p.team}${src}</div></div>`;
     const nums = `<span class="meta">ADP ${p.adp < 900 ? p.adp.toFixed(0) : '–'}${p.xrank != null ? ` · xRk ${p.xrank.toFixed(0)}` : ''}</span>`;
-    return `<div class="s"><div class="top">${who}<div class="side">${nums}${gapTag}${tag}</div></div>${cells}</div>`;
+    return `<div class="s"><div class="top">${who}<div class="side">${tag}<div class="nums">${nums}${gapTag}</div></div></div>${cells}</div>`;
   }
   function render() {
     dirty = false; if (!root) return;
