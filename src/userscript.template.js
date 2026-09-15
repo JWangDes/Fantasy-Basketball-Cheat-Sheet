@@ -6,6 +6,8 @@
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
 // @grant        none
+// @updateURL    https://raw.githubusercontent.com/JWangDes/Fantasy-Basketball-Cheat-Sheet/main/jasons-cheat-sheet.user.js
+// @downloadURL  https://raw.githubusercontent.com/JWangDes/Fantasy-Basketball-Cheat-Sheet/main/jasons-cheat-sheet.user.js
 // ==/UserScript==
 (function () {
   'use strict';
