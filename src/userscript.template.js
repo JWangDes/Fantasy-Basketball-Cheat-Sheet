@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.15
+// @version      1.16
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -26,7 +26,7 @@
   const m = location.pathname.match(/draftclient\/nba\/(\d+)\/(\d+)/);
   const LEAGUE = m ? m[1] : null, MY_TEAM = m ? +m[2] : null;
 
-  const S = { picks: new Map(), onClock: null, order: [], players: new Map(), ready: false, err: null, mode: 'fit', collapsed: false, query: '', newVersion: null };
+  const S = { picks: new Map(), onClock: null, order: [], players: new Map(), ready: false, err: null, mode: 'fit', collapsed: false, query: '', newVersion: null, popErr: null };
 
   // ---------- 0. check GitHub for a newer version as soon as the draft room opens ----------
   async function checkForUpdate() {
@@ -333,35 +333,73 @@
   #fh .upd{display:inline-block;margin-top:5px;color:#1b1207;background:#e8a54c;font-weight:700;font-size:12.5px;padding:2px 7px;border-radius:4px;text-decoration:none}
   #fh .upd:hover{filter:brightness(1.08)}
   #fh .vg{font-size:12.5px;font-weight:700;border-radius:3px;padding:0 5px;margin-left:2px}
-  #fh .vg.up{background:#14301d;color:#6fd184}#fh .vg.dn{background:#35240f;color:#f0a04b}`;
-  let root, dirty = false;
-  function schedule() { if (!dirty) { dirty = true; setTimeout(render, 150); } }
+  #fh .vg.up{background:#14301d;color:#6fd184}#fh .vg.dn{background:#35240f;color:#f0a04b}
+  #fh .btns{display:flex;gap:6px;flex:0 0 auto}
+  #fh .sub.perr{color:#ee7a6c}
+  #fh.win{position:static;width:100%;max-height:none;border:none;border-radius:0;box-shadow:none}
+  #fh.win .hd{cursor:default}`;
+  let inlineRoot = null, root = null, pop = null, dirty = false;
+  // Timers in a hidden tab get throttled hard, so once popped out let the popup — which is visible — drive the clock.
+  function schedule() { if (!dirty) { dirty = true; (pop && !pop.closed ? pop : window).setTimeout(render, 150); } }
+  function onClick(e) {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.mode) { S.mode = b.dataset.mode; render(); }
+    if (b.dataset.act === 'min') { S.collapsed = !S.collapsed; render(); }
+    if (b.dataset.act === 'pop') popOut();
+    if (b.dataset.act === 'dock') { try { pop.close(); } catch (e) {} dock(); }
+  }
+  function onInput(e) { if (e.target && e.target.id === 'fh-search') { S.query = e.target.value; render(); } }
+  function buildPanel(win) {
+    const d = win.document;
+    const st = d.createElement('style'); st.textContent = CSS; d.head.appendChild(st);
+    const r = d.createElement('div'); r.id = 'fh'; d.body.appendChild(r);
+    r.addEventListener('click', onClick);
+    r.addEventListener('input', onInput);
+    return r;
+  }
+  function popOut() {
+    let w = null;
+    try { w = window.open('', 'fhPanel', 'width=560,height=940'); } catch (e) {}
+    if (!w) { S.popErr = 'Popup blocked — allow popups for this site, then try again.'; render(); return; }
+    S.popErr = null; pop = w;
+    try {
+      w.document.title = "Jason's Cheat Sheet";
+      w.document.body.style.cssText = 'margin:0;background:#101418';
+      root = buildPanel(w); root.classList.add('win');
+      if (inlineRoot) inlineRoot.style.display = 'none';
+      // belt-and-braces against throttling: repaint from the popup's own (unthrottled) timer
+      w.setInterval(() => render(), 1000);
+      w.addEventListener('beforeunload', () => dock());
+      render();
+    } catch (e) { S.popErr = 'Could not draw the popup (' + (e.message || e) + ').'; dock(); }
+  }
+  function dock() {
+    pop = null; root = inlineRoot;
+    if (inlineRoot) inlineRoot.style.display = '';
+    schedule();
+  }
   function mount() {
-    if (root || !document.body) return;
-    const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
-    root = document.createElement('div'); root.id = 'fh'; document.body.appendChild(root);
-    root.addEventListener('click', e => {
-      const b = e.target.closest('button'); if (!b) return;
-      if (b.dataset.mode) { S.mode = b.dataset.mode; render(); }
-      if (b.dataset.act === 'min') { S.collapsed = !S.collapsed; render(); }
-    });
-    root.addEventListener('input', e => {
-      if (e.target && e.target.id === 'fh-search') { S.query = e.target.value; render(); }
-    });
-    // drag
+    if (inlineRoot || !document.body) return;
+    inlineRoot = buildPanel(window);
     let drag = null;
-    root.addEventListener('mousedown', e => { if (!e.target.closest('.hd') || e.target.closest('button')) return; const r = root.getBoundingClientRect(); drag = { dx: e.clientX - r.left, dy: e.clientY - r.top }; e.preventDefault(); });
-    window.addEventListener('mousemove', e => { if (!drag) return; root.style.left = Math.max(0, e.clientX - drag.dx) + 'px'; root.style.top = Math.max(0, e.clientY - drag.dy) + 'px'; root.style.right = 'auto'; root.style.bottom = 'auto'; });
-    window.addEventListener('mouseup', () => { if (drag) { try { localStorage.setItem('fhPos', JSON.stringify({ l: root.style.left, t: root.style.top })); } catch (e) {} } drag = null; });
-    try { const pos = JSON.parse(localStorage.getItem('fhPos') || 'null'); if (pos && pos.l) { root.style.left = pos.l; root.style.top = pos.t; root.style.right = 'auto'; root.style.bottom = 'auto'; } } catch (e) {}
+    inlineRoot.addEventListener('mousedown', e => { if (!e.target.closest('.hd') || e.target.closest('button')) return; const r = inlineRoot.getBoundingClientRect(); drag = { dx: e.clientX - r.left, dy: e.clientY - r.top }; e.preventDefault(); });
+    window.addEventListener('mousemove', e => { if (!drag) return; inlineRoot.style.left = Math.max(0, e.clientX - drag.dx) + 'px'; inlineRoot.style.top = Math.max(0, e.clientY - drag.dy) + 'px'; inlineRoot.style.right = 'auto'; inlineRoot.style.bottom = 'auto'; });
+    window.addEventListener('mouseup', () => { if (drag) { try { localStorage.setItem('fhPos', JSON.stringify({ l: inlineRoot.style.left, t: inlineRoot.style.top })); } catch (e) {} } drag = null; });
+    try { const pos = JSON.parse(localStorage.getItem('fhPos') || 'null'); if (pos && pos.l) { inlineRoot.style.left = pos.l; inlineRoot.style.top = pos.t; inlineRoot.style.right = 'auto'; inlineRoot.style.bottom = 'auto'; } } catch (e) {}
+    if (pop && !pop.closed) inlineRoot.style.display = 'none'; else root = inlineRoot;
     render();
   }
+  // don't leave an orphaned window showing a frozen board after a draft-page reload
+  window.addEventListener('beforeunload', () => { try { if (pop && !pop.closed) pop.close(); } catch (e) {} });
   const fmt = (c, v) => c < 2 ? v.toFixed(3).replace(/^0/, '') : Math.round(v).toLocaleString();
   const cls = r => r <= 4 ? 'g' : r <= 8 ? 'o' : 'r';
   const label = r => r <= 4 ? 'Double down' : r <= 8 ? 'Target' : 'Punt';
   const SHORT = ['FG', 'FT', '3P', 'PT', 'RB', 'AS', 'ST', 'BK', 'TO'];
   const ICON_MIN = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
   const ICON_MAX = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4 10l4-4 4 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const SVG = p => `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">${p}</svg>`;
+  const ICON_POP = SVG('<path d="M10 2.5h3.5V6M13.5 2.5L8.5 7.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9.5v3.5a.5.5 0 01-.5.5h-8a.5.5 0 01-.5-.5v-8a.5.5 0 01.5-.5H7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>');
+  const ICON_DOCK = SVG('<path d="M13.5 2.5L9 7M9 3.5V7h3.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9.5v3.5a.5.5 0 01-.5.5h-8a.5.5 0 01-.5-.5v-8a.5.5 0 01.5-.5H7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>');
   const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   function playerCard(p, moves, cur, next) {
     const byCat = {}; (moves || []).forEach(x => byCat[x[0]] = x);
@@ -395,9 +433,10 @@
     return `<div class="s"><div class="top">${who}<div class="side">${tag}<div class="nums">${nums}${gapTag}</div></div></div>${cells}</div>`;
   }
   function render() {
-    dirty = false; if (!root) return;
+    dirty = false; if (!root || (pop && pop.closed)) { if (pop && pop.closed) dock(); return; }
     // an innerHTML rewrite drops focus/cursor, so save and restore them around it if the search box is active
-    const active = root.contains(document.activeElement) ? document.activeElement : null;
+    const od = root.ownerDocument; // popup or draft page, depending on where the panel lives
+    const active = root.contains(od.activeElement) ? od.activeElement : null;
     const searchFocused = active && active.id === 'fh-search';
     const selStart = searchFocused ? active.selectionStart : null, selEnd = searchFocused ? active.selectionEnd : null;
 
@@ -406,7 +445,12 @@
     const cur = S.onClock ? S.onClock.pick : S.picks.size + 1;
     const status = `${S.picks.size ? S.picks.size + ' picks' : (DOM_MINE.size ? 'your roster only' : '0 picks')}${S.onClock ? ` · #${S.onClock.pick} on clock` : ''}${next ? ` · you #${next}` : ''}${S.ready ? '' : ' · ' + (S.err || 'loading…')}`;
     const updateBanner = S.newVersion ? `<a class="upd" href="${RAW_URL}" target="_blank" rel="noopener">v${escHtml(S.newVersion)} available — click to update</a>` : '';
-    const head = `<div class="hd"><div><div class="ttl">Jason's <b>Cheat Sheet</b></div><div class="sub">${status}</div>${updateBanner}</div><button class="ic" data-act="min" title="${S.collapsed ? 'Expand' : 'Minimize'}" aria-label="${S.collapsed ? 'Expand' : 'Minimize'}">${S.collapsed ? ICON_MAX : ICON_MIN}</button></div>`;
+    const popMsg = S.popErr ? `<div class="sub perr">${escHtml(S.popErr)}</div>` : '';
+    const btns = pop
+      ? `<button class="ic" data-act="dock" title="Dock back into the draft page" aria-label="Dock">${ICON_DOCK}</button>`
+      : `<button class="ic" data-act="pop" title="Open in its own window" aria-label="Pop out">${ICON_POP}</button>` +
+        `<button class="ic" data-act="min" title="${S.collapsed ? 'Expand' : 'Minimize'}" aria-label="${S.collapsed ? 'Expand' : 'Minimize'}">${S.collapsed ? ICON_MAX : ICON_MIN}</button>`;
+    const head = `<div class="hd"><div><div class="ttl">Jason's <b>Cheat Sheet</b></div><div class="sub">${status}</div>${popMsg}${updateBanner}</div><div class="btns">${btns}</div></div>`;
     if (!S.ready || !AVG) { root.innerHTML = head; return; }
     const base = analyze();
     const grid = CATS.map((c, i) => `<div class="row"><span class="cn">${c}</span><span class="val">${fmt(i, base.my[i])}</span><span class="rk ${cls(base.ranks[i])}" >#${base.ranks[i]}</span></div>`).join('');
@@ -436,5 +480,5 @@
   // wait for the draft room to finish its own login handshake before asking for player data
   setTimeout(() => loadPlayers(), 2500);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount); else mount();
-  setInterval(() => { if (!root) mount(); }, 2000);
+  setInterval(() => { if (!inlineRoot || !document.body.contains(inlineRoot)) { inlineRoot = null; mount(); } }, 2000);
 })();

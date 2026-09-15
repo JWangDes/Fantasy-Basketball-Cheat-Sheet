@@ -52,6 +52,12 @@ User preferences: main points, no fluff. Say "I don't know" and verify when unce
 - Tags compare ADP to Jason's next pick: gap ≥ 6 "Likely there", within ±6 "Maybe there", else "Likely gone";
   "Faller" when the player is still available 12+ picks past his ADP.
 - UI: fixed panel, 497px wide, draggable (position saved in localStorage `fhPos`), minimize button.
+- Pop out (⧉) moves the panel into its own window. Sync still runs in the draft tab — only that tab can see Yahoo's
+  WebSocket — so the popup is purely a render target the draft tab paints into (`about:blank` inherits the opener's
+  origin, so no messaging is needed). Two things this depends on: `schedule()` must use the **popup's** timers, since a
+  hidden tab's are throttled to ~1/min after 5 minutes, and the popup also repaints itself once a second as a backstop;
+  and the draft page's `beforeunload` closes the popup, so a reload can't leave an orphan window showing a frozen board.
+  The inline overlay is hidden (not destroyed) while popped, and comes back when the popup closes.
 
 ## Rules
 - Never make picks or click anything in Yahoo's draft room; the script is read-only.
