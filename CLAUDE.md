@@ -14,10 +14,11 @@ User preferences: main points, no fluff. Say "I don't know" and verify when unce
 ## Files
 - `src/userscript.template.js` — the source. Edit this, never the built file.
 - `src/proj.json` — saved projections for 250 players: `[name, team, pos, [GP, FG%, FT%, 3PM, PTS, REB, AST, STL, BLK, TO]]` per game. Fallback only.
-- `build.js` — replaces `__PROJ__` with proj.json and `__VERSION__` with the template's `@version`, writes `jasons-cheat-sheet.user.js`.
+- `build.js` — replaces `__PROJ__` with proj.json, `__VERSION__` with the template's `@version`, and `__XRANK__` with the xRank column parsed out of `docs/player-data.md`; writes `jasons-cheat-sheet.user.js`.
 - `jasons-cheat-sheet.user.js` — built output that Jason pastes into Tampermonkey. Commit it.
 - `test/harness.js` — Node simulation (stub DOM, WebSocket, fetch); writes `test/panel.html`.
 - `docs/` — copies of the claude.ai Project docs (strategy, draft plan, player data). Source of truth is the Project; recopy when they change.
+  `player-data.md` is also a **build input** (its xRank column) — keep the table's `| xRk | Player | Pos | Tm | Flag | ADP |` column order or the build throws.
 
 ## Workflow
 1. Edit `src/userscript.template.js`. Bump `// @version` every change.
@@ -39,6 +40,12 @@ User preferences: main points, no fluff. Say "I don't know" and verify when unce
 - Team totals = per-game × GP; FG%/FT% from makes/attempts. Empty roster slots are filled with an average top-156 line for every team.
   Ranks are against the other 11 teams (TO: lower is better).
 - `effectiveAdp` blends ADP with o_rank when percent-drafted is low (noisy ADP).
+- Two separate numbers, deliberately not merged: **value** = `0.7 × xRank + 0.3 × effectiveAdp` (`p.value`, falls back to
+  effectiveAdp below xRank ~150) orders Best available, the top-40 candidate pool, and search results; **timing** =
+  `effectiveAdp` alone (`p.adp`) drives the Likely there / gone tags. Blending them would make each wrong for its own job
+  (Kawhi: xRank 48, ADP 23 — a blend is too late to warn he's gone, too early to reflect his value).
+  xRank and ADP correlate at r≈0.97, so the weight mostly matters for the ~20 players who diverge by 15+ picks.
+- Value gap (`ADP − xRank`, shown as a `+n value` / `−n reach` badge when |gap| ≥ 8) is the one signal Yahoo's UI doesn't have.
 - Best fit: rank change weighted ×0.5 for categories ranked 1–4, ×1 for 5–8, ×0.25 for 9–12. Candidates are the top 40 by effective ADP; show 10.
 - Tags compare ADP to Jason's next pick: gap ≥ 6 "Likely there", within ±6 "Maybe there", else "Likely gone";
   "Faller" when the player is still available 12+ picks past his ADP.

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.12
+// @version      1.13
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -15,6 +15,9 @@
 
   // ---------- 2026-27 projections: [name, team, pos, [GP,FG%,FT%,3PM,PTS,REB,AST,STL,BLK,TO]] ----------
   const PROJ = __PROJ__;
+  // ---------- multi-source consensus rank (top ~150), from docs/player-data.md: [name, team, xRank] ----------
+  const XRANK = __XRANK__;
+  const XR_W = 0.7; // draft order = 70% consensus value + 30% live market ADP; below ~150 there's no xRank, so ADP alone
   const CURRENT_VERSION = __VERSION__;
   const RAW_URL = 'https://raw.githubusercontent.com/JWangDes/Fantasy-Basketball-Cheat-Sheet/main/jasons-cheat-sheet.user.js';
 
@@ -122,6 +125,8 @@
         const k = keyOf(ini, rest.join(' ')) + '|' + tm;
         (projByKey.get(k) || projByKey.set(k, []).get(k)).push([pos, pr]);
       });
+      const xrankByKey = new Map(); // same key, independent of which projection source won
+      XRANK.forEach(([n, tm, xr]) => { const [ini, ...rest] = n.split(' '); xrankByKey.set(keyOf(ini, rest.join(' ')) + '|' + tm, xr); });
       list.forEach(y => {
         const ss = y.season_stats || {}; const num = k => parseFloat(ss[k]);
         const cands = projByKey.get(keyOf(y.fname || '?', y.lname || '') + '|' + y.team_abbr) || [];
@@ -150,9 +155,11 @@
           }
         }
         if (line) ['fgp', 'ftp'].forEach(f => { if (!(line[f] > 0)) line[f] = f === 'fgp' ? 0.46 : 0.78; });
+        const adp = effectiveAdp(y);
+        const xrank = xrankByKey.get(keyOf(y.fname || '?', y.lname || '') + '|' + y.team_abbr) ?? null;
         S.players.set(+y.id, {
           id: +y.id, name: `${(y.fname || '')[0] || ''}. ${y.lname}`, full: `${y.fname} ${y.lname}`, team: y.team_abbr, pos: y.display_pos || '',
-          inj: y.inj || '', adp: effectiveAdp(y), line, src
+          inj: y.inj || '', adp, xrank, value: xrank != null ? XR_W * xrank + (1 - XR_W) * adp : adp, line, src
         });
       });
       buildBaseline(); S.ready = true;
@@ -254,15 +261,15 @@
     return { score, moves };
   }
   function suggestions(base) {
-    const avail = availablePlayers().sort((a, b) => a.adp - b.adp);
+    const avail = availablePlayers().sort((a, b) => a.value - b.value);
     return avail.slice(0, 40).map(p => ({ p, ...evaluate(p, base) }))
-      .sort((x, y) => S.mode === 'bpa' ? x.p.adp - y.p.adp : (y.score - x.score || x.p.adp - y.p.adp)).slice(0, 10);
+      .sort((x, y) => S.mode === 'bpa' ? x.p.value - y.p.value : (y.score - x.score || x.p.value - y.p.value)).slice(0, 10);
   }
   const searchNorm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   function searchResults(base) {
     const q = searchNorm(S.query.trim()); if (!q) return [];
     return availablePlayers().filter(p => searchNorm(p.full + ' ' + p.name).includes(q))
-      .sort((a, b) => a.adp - b.adp).slice(0, 15).map(p => ({ p, ...evaluate(p, base) }));
+      .sort((a, b) => a.value - b.value).slice(0, 15).map(p => ({ p, ...evaluate(p, base) }));
   }
   function myPickAfter(n) { // first of my picks with number > n
     if (!S.order.length) return null;
@@ -320,7 +327,9 @@
   #fh input[type=search]:focus-visible{outline:2px solid #e8a54c;outline-offset:1px}
   #fh .empty{color:#9aa4af;font-size:13.5px;padding:8px 0}
   #fh .upd{display:inline-block;margin-top:5px;color:#1b1207;background:#e8a54c;font-weight:700;font-size:12.5px;padding:2px 7px;border-radius:4px;text-decoration:none}
-  #fh .upd:hover{filter:brightness(1.08)}`;
+  #fh .upd:hover{filter:brightness(1.08)}
+  #fh .vg{font-size:12.5px;font-weight:700;border-radius:3px;padding:0 5px;margin-left:2px}
+  #fh .vg.up{background:#14301d;color:#6fd184}#fh .vg.dn{background:#35240f;color:#f0a04b}`;
   let root, dirty = false;
   function schedule() { if (!dirty) { dirty = true; setTimeout(render, 150); } }
   function mount() {
@@ -372,7 +381,12 @@
       else if (gap >= -6) tag = `<span class="tag flip">Maybe there</span>`;
       else tag = `<span class="tag gone">Likely gone</span>`;
     }
-    return `<div class="s"><div class="top"><div><span class="nm">${p.name}</span>${p.inj ? `<span class="inj">${p.inj}</span>` : ''}<div class="meta">${p.pos} · ${p.team}${p.src === 'live' ? '' : p.src === 'saved' ? ' · saved proj' : ' · last season'} · ADP ${p.adp < 900 ? p.adp.toFixed(0) : '–'}</div></div>${tag}</div>${cells}</div>`;
+    // market vs. consensus: positive = the field is letting him slide past his value, negative = the field reaches
+    const vgap = p.xrank != null ? p.adp - p.xrank : 0;
+    const gapTag = Math.abs(vgap) < 8 ? ''
+      : ` <span class="vg ${vgap > 0 ? 'up' : 'dn'}" title="ADP ${p.adp.toFixed(0)} vs consensus xRank ${p.xrank.toFixed(0)}">${vgap > 0 ? '+' + vgap.toFixed(0) + ' value' : vgap.toFixed(0) + ' reach'}</span>`;
+    const meta = `${p.pos} · ${p.team}${p.src === 'live' ? '' : p.src === 'saved' ? ' · saved proj' : ' · last season'} · ADP ${p.adp < 900 ? p.adp.toFixed(0) : '–'}${p.xrank != null ? ` · xRk ${p.xrank.toFixed(0)}` : ''}`;
+    return `<div class="s"><div class="top"><div><span class="nm">${p.name}</span>${p.inj ? `<span class="inj">${p.inj}</span>` : ''}<div class="meta">${meta}${gapTag}</div></div>${tag}</div>${cells}</div>`;
   }
   function render() {
     dirty = false; if (!root) return;

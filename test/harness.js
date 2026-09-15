@@ -12,7 +12,7 @@ const mkEl=()=>{const l={};return {style:{},classList:{toggle(){}},addEventListe
 global.document={readyState:'complete',activeElement:null,body:{appendChild(e){els.push(e)}},head:{appendChild(){}},createElement:mkEl,querySelectorAll:()=>[],addEventListener(){}};
 global.addEventListener=()=>{};
 const proj=JSON.parse(fs.readFileSync('src/proj.json','utf8'));
-const players=proj.slice(0,160).map((r,i)=>{const [ini,...rest]=r[0].split(' ');return {id:i+1,fname:ini.replace('.','')+'x',lname:rest.join(' '),team_abbr:r[1],display_pos:r[2],inj:i%17==0?'GTD':'','average-pick':String(i+1),'percent-drafted':i==40?'0.02':'1.0',o_rank:i+1,season_stats:{},projected_stats:(i%2?{}:(()=>{const p=r[3]||[],g=p[0]||70;const fga=15*g,fta=5*g;return {0:g,3:fga,4:fga*(p[1]||.47),5:p[1],6:fta,7:fta*(p[2]||.78),8:p[2],10:p[3]*g,12:p[4]*g,15:p[5]*g,16:p[6]*g,17:p[7]*g,18:p[8]*g,19:p[9]*g}})())}});
+const players=proj.slice(0,160).map((r,i)=>{const [ini,...rest]=r[0].split(' ');return {id:i+1,fname:ini.replace('.','')+'x',lname:rest.join(' '),team_abbr:r[1],display_pos:r[2],inj:i%17==0?'GTD':'','average-pick':String(i==50?20:i==60?120:i+1),'percent-drafted':i==40?'0.02':'1.0',o_rank:i+1,season_stats:{},projected_stats:(i%2?{}:(()=>{const p=r[3]||[],g=p[0]||70;const fga=15*g,fta=5*g;return {0:g,3:fga,4:fga*(p[1]||.47),5:p[1],6:fta,7:fta*(p[2]||.78),8:p[2],10:p[3]*g,12:p[4]*g,15:p[5]*g,16:p[6]*g,17:p[7]*g,18:p[8]*g,19:p[9]*g}})())}});
 const builtVersion=(code.match(/@version\s+(\S+)/)||[])[1];
 const fakeNewerVersion=builtVersion+'.1'; // simulates a newer push to GitHub, to exercise the update banner
 global.fetch=async(url)=>{
@@ -38,6 +38,13 @@ setTimeout(()=>{
     fs.writeFileSync('test/panel-search.html',`<style>body{background:#222;margin:0;padding:20px}${css}</style><div id="fh" style="position:static">${els[0].innerHTML}</div>`);
     els[0]._emit('input',{target:{id:'fh-search',value:'zzzznomatch'}});
     if(!els[0].innerHTML.includes('No available players match')) throw new Error('search: no-match state did not render');
+    // index 50 is drafted way earlier than his consensus rank (reach), index 60 way later (value)
+    for(const [idx,want] of [[50,'reach'],[60,'value']]){
+      els[0]._emit('input',{target:{id:'fh-search',value:players[idx].lname.slice(0,4).toLowerCase()}});
+      if(!new RegExp(`class="vg (up|dn)"[^>]*>[^<]*${want}<`).test(els[0].innerHTML)) throw new Error(`value gap: "${want}" badge did not render for ${players[idx].lname}`);
+    }
+    els[0]._emit('input',{target:{id:'fh-search',value:''}});
+    if(!/xRk \d/.test(els[0].innerHTML)) throw new Error('xRank did not reach the player cards');
     console.log('ok'); process.exit(0)
   },800);
 },3000);
