@@ -50,7 +50,14 @@ User preferences: main points, no fluff. Say "I don't know" and verify when unce
   A great fit you can still get at your next turn isn't worth spending this pick on; waiting gets you both. Players
   who'll keep are sorted down, never hidden — that a need can wait is itself useful. Early rounds are where this bites:
   at pick 12 the best fit in the pool often sits at ADP 38 and would otherwise top the list.
-- Three list modes: **Best fit** (rank change weighted ×0.5 for categories ranked 1–4, ×1 for 5–8, ×0.25 for 9–12),
+- Category bands (`band()`, one source of truth for colour *and* weight, so the panel can't label something "Consider"
+  while the scoring still chases it): **1–3 double down** green ×0.5, **4–6 target** yellow ×1.0, **7–9 consider**
+  orange ×0.75, **10–12 punt** red ×0.25. Consider isn't cut to punt levels because rank 7 is the tipping point —
+  you lose it slightly more often than you win it, so a small push there is often the cheapest category win available.
+- Each card shows two numbers in the Net box: raw rank places gained (big) over the weighted score the list is actually
+  ordered by (small). They diverge — +3 in a locked category scores below +2 in a contested one — and hiding the second
+  made the ordering look arbitrary.
+- Three list modes: **Best fit** (rank change weighted by the bands above),
   **ADP** (pure market order), **Best available** (consensus value). The candidate pool is the top 60 by whichever key the
   mode sorts on — pooling by value while sorting by ADP would drop market darlings — and 20 are shown.
 - Tags compare ADP to the pick Jason would wait for: gap ≥ 6 "Likely there", within ±6 "Maybe there", else "Likely gone";
@@ -58,9 +65,10 @@ User preferences: main points, no fluff. Say "I don't know" and verify when unce
   pick after his whole consecutive run, not the next pick that happens to be his. At a back-to-back (48/49) no one else
   picks in between, so measuring against 49 makes everything read "Likely there"; the real question is who survives to 72.
 - UI: fixed panel, 497px wide, draggable (position saved in localStorage `fhPos`), minimize button.
-- Green side rails run down the columns Jason already wins (rank ≤ 4), with a tinted header chip. Rails rather than a
+- Green side rails run down the columns Jason already wins (band 0, rank ≤ 3), with a tinted header chip. Rails rather than a
   fill because the cell background already means "this player moves you up/down" — two meanings can't share it.
-  Only the strong band is railed: marking all three bands marks all nine columns, which highlights nothing (tried it).
+  Only the top band is railed: marking more bands marks most of the nine columns, which highlights nothing (mocked it
+  up twice and both times the busier version lost).
   The point is reading a ▼ in context — an 82% FT shooter dilutes a category you're #3 in, but you still win it, so the
   red is noise. A rail says the drop is affordable.
 - Pop out (⧉) moves the panel into its own window. Sync still runs in the draft tab — only that tab can see Yahoo's

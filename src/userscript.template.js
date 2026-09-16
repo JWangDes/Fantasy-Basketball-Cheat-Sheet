@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.20
+// @version      1.21
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -22,6 +22,11 @@
   const RAW_URL = 'https://raw.githubusercontent.com/JWangDes/Fantasy-Basketball-Cheat-Sheet/main/jasons-cheat-sheet.user.js';
 
   const CATS = ['FG%', 'FT%', '3PM', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'TO'];
+  // 1-3 double down (already won) · 4-6 target (contested, where a pick is worth most) · 7-9 consider (uphill,
+  // but 7 is the tipping point so it isn't discounted to punt levels) · 10-12 punt. Colour and weight share
+  // these cutoffs so the panel can't say "Consider" while the scoring still chases the category.
+  const band = r => r <= 3 ? 0 : r <= 6 ? 1 : r <= 9 ? 2 : 3;
+  const BAND_CLS = ['g', 'y', 'o', 'r'], BAND_W = [0.5, 1, 0.75, 0.25];
   const ROSTER = 13;
   const m = location.pathname.match(/draftclient\/nba\/(\d+)\/(\d+)/);
   const LEAGUE = m ? m[1] : null, MY_TEAM = m ? +m[2] : null;
@@ -260,7 +265,7 @@
   }
 
   // ---------- 4. suggestions ----------
-  const W = r => r <= 4 ? 0.5 : r <= 8 ? 1 : 0.25; // double down / target / punt
+  const W = r => BAND_W[band(r)];
   function availablePlayers() {
     const taken = new Set([...S.picks.values()].map(v => v.pid).concat([...DOM_MINE]));
     return [...S.players.values()].filter(p => p.line && !taken.has(p.id));
@@ -326,14 +331,15 @@
   #fh .cn{font-weight:600}
   #fh .val{color:#b4bcc6}
   #fh .rk{text-align:center;font-weight:700;border-radius:5px;padding:2px 0}
-  #fh .g{background:#14301d;color:#6fd184}#fh .o{background:#35240f;color:#f0a04b}#fh .r{background:#361714;color:#ee7a6c}
-  #fh .gt{color:#6fd184}#fh .ot{color:#f0a04b}#fh .rt{color:#ee7a6c}
+  #fh .g{background:#14301d;color:#6fd184}#fh .y{background:#3a3310;color:#e8c84c}#fh .o{background:#35240f;color:#f0a04b}#fh .r{background:#361714;color:#ee7a6c}
+  #fh .gt{color:#6fd184}#fh .yt{color:#e8c84c}#fh .ot{color:#f0a04b}#fh .rt{color:#ee7a6c}
   #fh .sec{font-size:13.5px;text-transform:uppercase;letter-spacing:.06em;color:#9aa4af;display:flex;justify-content:space-between;align-items:center;gap:8px}
   #fh .legend{color:#9aa4af;font-size:13.5px;margin:6px 0 4px}
   #fh .strip{display:grid;grid-template-columns:38px repeat(9,1fr);gap:3px;align-items:stretch;margin-top:4px}
   #fh .strip.hdr span{text-align:center;font-size:13.5px;font-weight:700}
   #fh .cell,#fh .net{text-align:center;font-size:13.5px;font-weight:700;border-radius:4px;padding:3px 0;display:flex;flex-direction:column;justify-content:center;line-height:1.2}
-  #fh .cell b{font-weight:600;color:#e9edf1}#fh .cell i{font-style:normal;font-weight:700}
+  #fh .cell b{font-weight:600;color:#e9edf1}#fh .cell i,#fh .net i{font-style:normal;font-weight:700}
+  #fh .net i{font-size:11.5px;opacity:.72}
   #fh .cell.nt{background:#161b21}#fh .cell.nt i{color:#4a535d}
   #fh .cell.up,#fh .net.up{background:#14301d;color:#6fd184}#fh .cell.dn,#fh .net.dn{background:#361714;color:#ee7a6c}
   #fh .cell.str{box-shadow:inset 2px 0 0 rgba(111,209,132,.55),inset -2px 0 0 rgba(111,209,132,.55)}
@@ -418,8 +424,7 @@
   // don't leave an orphaned window showing a frozen board after a draft-page reload
   window.addEventListener('beforeunload', () => { try { if (pop && !pop.closed) pop.close(); } catch (e) {} });
   const fmt = (c, v) => c < 2 ? v.toFixed(3).replace(/^0/, '') : Math.round(v).toLocaleString();
-  const cls = r => r <= 4 ? 'g' : r <= 8 ? 'o' : 'r';
-  const label = r => r <= 4 ? 'Double down' : r <= 8 ? 'Target' : 'Punt';
+  const cls = r => BAND_CLS[band(r)];
   const SHORT = ['FG', 'FT', '3P', 'PT', 'RB', 'AS', 'ST', 'BK', 'TO'];
   const ICON_MIN = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
   const ICON_MAX = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4 10l4-4 4 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -427,13 +432,13 @@
   const ICON_POP = SVG('<path d="M10 2.5h3.5V6M13.5 2.5L8.5 7.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9.5v3.5a.5.5 0 01-.5.5h-8a.5.5 0 01-.5-.5v-8a.5.5 0 01.5-.5H7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>');
   const ICON_DOCK = SVG('<path d="M13.5 2.5L9 7M9 3.5V7h3.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9.5v3.5a.5.5 0 01-.5.5h-8a.5.5 0 01-.5-.5v-8a.5.5 0 01.5-.5H7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>');
   const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  function playerCard(p, moves, cur, waitPick, strong) {
+  function playerCard({ p, moves, score }, cur, waitPick, strong) {
     const byCat = {}; (moves || []).forEach(x => byCat[x[0]] = x);
     const net = (moves || []).reduce((s, x) => s + x[3], 0);
     const L = p.line;
     const vals = [L.fgp, L.ftp, L.tpm, L.pts, L.reb, L.ast, L.stl, L.blk, L.to]; // per game (projected season ÷ projected games)
     const fv = (i, v) => i < 2 ? v.toFixed(3).replace(/^0/, '') : v.toFixed(1);
-    const cells = `<div class="strip">${'<span class="net ' + (net > 0 ? 'up' : net < 0 ? 'dn' : 'nt') + '">' + (net > 0 ? '+' : '') + net + '</span>'}${CATS.map((c, i) => {
+    const cells = `<div class="strip">${'<span class="net ' + (net > 0 ? 'up' : net < 0 ? 'dn' : 'nt') + '" title="' + (net > 0 ? '+' : '') + net + ' rank places gained · ' + score.toFixed(1) + ' after weighting each category by how much it is worth to you — the list is ordered by this second number"><b>' + (net > 0 ? '+' : '') + net + '</b><i>' + (score > 0 ? '+' : '') + score.toFixed(1) + '</i></span>'}${CATS.map((c, i) => {
       const x = byCat[c]; const d = x ? x[3] : 0;
       // a rail marks a category you already win: a ▼ there is dilution, not damage — you keep the category either way
       const title = `${c}: ${fv(i, vals[i])} per game${x ? ` · your rank #${x[1]} → #${x[2]}` : ' · no rank change'}${strong && strong[i] ? ' · you already win this one' : ''}`;
@@ -480,13 +485,13 @@
     if (!S.ready || !AVG) { root.innerHTML = head; return; }
     const base = analyze();
     const grid = CATS.map((c, i) => `<div class="row"><span class="cn">${c}</span><span class="val">${fmt(i, base.my[i])}</span><span class="rk ${cls(base.ranks[i])}" >#${base.ranks[i]}</span></div>`).join('');
-    const strong = base.ranks.map(r => r <= 4); // the categories you're already winning
+    const strong = base.ranks.map(r => band(r) === 0); // the categories you've already locked
     const colHead = `<div class="strip hdr"><span class="nh" title="Net rank change across all 9 categories">Net</span>${SHORT.map((s, i) => `<span class="${cls(base.ranks[i])}t${strong[i] ? ' str' : ''}">${s}</span>`).join('')}</div>`;
-    const sug = suggestions(base, waitPick).map(({ p, moves }) => playerCard(p, moves, cur, waitPick, strong)).join('');
+    const sug = suggestions(base, waitPick).map(x => playerCard(x, cur, waitPick, strong)).join('');
     const q = S.query.trim();
     const results = q ? searchResults(base) : [];
     const searchBody = !q ? '' : results.length
-      ? colHead + results.map(({ p, moves }) => playerCard(p, moves, cur, waitPick, strong)).join('')
+      ? colHead + results.map(x => playerCard(x, cur, waitPick, strong)).join('')
       : `<div class="empty">No available players match "${escHtml(q)}".</div>`;
     root.innerHTML = head + `<div class="bd">
       <div><div class="sec"><span>Category ranks</span><span>Overall #${overallRank()} of 12</span></div>

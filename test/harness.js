@@ -86,7 +86,7 @@ setTimeout(()=>{
     const rows=els[0].innerHTML.split('<div class="s">').slice(1).map(c=>({
       name:(c.match(/class="nm">([^<]+)/)||[])[1],
       tier:tier[(c.match(/class="tag \w+">([^<]+)/)||[])[1]]||1,
-      net:+((c.match(/class="net [a-z]+">([+-]?\d+)/)||[])[1]||0)}));
+      net:+((c.match(/class="net [a-z]+"[^>]*><b>([+-]?\d+)/)||[])[1]||0)}));
     for(let i=1;i<rows.length;i++) if(rows[i].tier<rows[i-1].tier)
       throw new Error(`urgency sort: ${rows[i].name} (tier ${rows[i].tier}) ranked below ${rows[i-1].name} (tier ${rows[i-1].tier})`);
     if(rows[0].tier!==1) throw new Error('urgency sort: top suggestion is not from the most urgent tier');
