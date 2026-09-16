@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.19
+// @version      1.20
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -336,6 +336,8 @@
   #fh .cell b{font-weight:600;color:#e9edf1}#fh .cell i{font-style:normal;font-weight:700}
   #fh .cell.nt{background:#161b21}#fh .cell.nt i{color:#4a535d}
   #fh .cell.up,#fh .net.up{background:#14301d;color:#6fd184}#fh .cell.dn,#fh .net.dn{background:#361714;color:#ee7a6c}
+  #fh .cell.str{box-shadow:inset 2px 0 0 rgba(111,209,132,.55),inset -2px 0 0 rgba(111,209,132,.55)}
+  #fh .strip.hdr span.str{background:rgba(111,209,132,.14);border-radius:4px}
   #fh .net.nt{color:#9aa4af;background:#1b2128}
   #fh .up{color:#6fd184}#fh .dn{color:#ee7a6c}
   #fh .s{padding:8px 0;border-top:1px solid #222a32}
@@ -425,7 +427,7 @@
   const ICON_POP = SVG('<path d="M10 2.5h3.5V6M13.5 2.5L8.5 7.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9.5v3.5a.5.5 0 01-.5.5h-8a.5.5 0 01-.5-.5v-8a.5.5 0 01.5-.5H7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>');
   const ICON_DOCK = SVG('<path d="M13.5 2.5L9 7M9 3.5V7h3.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9.5v3.5a.5.5 0 01-.5.5h-8a.5.5 0 01-.5-.5v-8a.5.5 0 01.5-.5H7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>');
   const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  function playerCard(p, moves, cur, waitPick) {
+  function playerCard(p, moves, cur, waitPick, strong) {
     const byCat = {}; (moves || []).forEach(x => byCat[x[0]] = x);
     const net = (moves || []).reduce((s, x) => s + x[3], 0);
     const L = p.line;
@@ -433,8 +435,9 @@
     const fv = (i, v) => i < 2 ? v.toFixed(3).replace(/^0/, '') : v.toFixed(1);
     const cells = `<div class="strip">${'<span class="net ' + (net > 0 ? 'up' : net < 0 ? 'dn' : 'nt') + '">' + (net > 0 ? '+' : '') + net + '</span>'}${CATS.map((c, i) => {
       const x = byCat[c]; const d = x ? x[3] : 0;
-      const title = `${c}: ${fv(i, vals[i])} per game${x ? ` · your rank #${x[1]} → #${x[2]}` : ' · no rank change'}`;
-      return `<span class="cell ${d > 0 ? 'up' : d < 0 ? 'dn' : 'nt'}" title="${title}"><b>${fv(i, vals[i])}</b><i>${d > 0 ? '▲' + d : d < 0 ? '▼' + (-d) : '–'}</i></span>`;
+      // a rail marks a category you already win: a ▼ there is dilution, not damage — you keep the category either way
+      const title = `${c}: ${fv(i, vals[i])} per game${x ? ` · your rank #${x[1]} → #${x[2]}` : ' · no rank change'}${strong && strong[i] ? ' · you already win this one' : ''}`;
+      return `<span class="cell ${strong && strong[i] ? 'str ' : ''}${d > 0 ? 'up' : d < 0 ? 'dn' : 'nt'}" title="${title}"><b>${fv(i, vals[i])}</b><i>${d > 0 ? '▲' + d : d < 0 ? '▼' + (-d) : '–'}</i></span>`;
     }).join('')}</div>`;
     let tag = '';
     if (p.adp < cur - 12) tag = `<span class="tag fall">Faller</span>`;
@@ -477,12 +480,13 @@
     if (!S.ready || !AVG) { root.innerHTML = head; return; }
     const base = analyze();
     const grid = CATS.map((c, i) => `<div class="row"><span class="cn">${c}</span><span class="val">${fmt(i, base.my[i])}</span><span class="rk ${cls(base.ranks[i])}" >#${base.ranks[i]}</span></div>`).join('');
-    const colHead = `<div class="strip hdr"><span class="nh" title="Net rank change across all 9 categories">Net</span>${SHORT.map((s, i) => `<span class="${cls(base.ranks[i])}t">${s}</span>`).join('')}</div>`;
-    const sug = suggestions(base, waitPick).map(({ p, moves }) => playerCard(p, moves, cur, waitPick)).join('');
+    const strong = base.ranks.map(r => r <= 4); // the categories you're already winning
+    const colHead = `<div class="strip hdr"><span class="nh" title="Net rank change across all 9 categories">Net</span>${SHORT.map((s, i) => `<span class="${cls(base.ranks[i])}t${strong[i] ? ' str' : ''}">${s}</span>`).join('')}</div>`;
+    const sug = suggestions(base, waitPick).map(({ p, moves }) => playerCard(p, moves, cur, waitPick, strong)).join('');
     const q = S.query.trim();
     const results = q ? searchResults(base) : [];
     const searchBody = !q ? '' : results.length
-      ? colHead + results.map(({ p, moves }) => playerCard(p, moves, cur, waitPick)).join('')
+      ? colHead + results.map(({ p, moves }) => playerCard(p, moves, cur, waitPick, strong)).join('')
       : `<div class="empty">No available players match "${escHtml(q)}".</div>`;
     root.innerHTML = head + `<div class="bd">
       <div><div class="sec"><span>Category ranks</span><span>Overall #${overallRank()} of 12</span></div>
