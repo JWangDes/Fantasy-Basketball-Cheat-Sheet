@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.21
+// @version      1.22
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -18,7 +18,7 @@
   // ---------- multi-source consensus rank (top ~150), from docs/player-data.md: [name, team, xRank] ----------
   const XRANK = [["N. Jokić","DEN","C",1.5],["V. Wembanyama","SAS","C",1.5],["L. Dončić","LAL","PG,SG",3.5],["S. Gilgeous-Alexander","OKC","PG",3.8],["C. Cunningham","DET","PG,SG",5.5],["G. Antetokounmpo","MIA","PF,C",6.3],["J. Tatum","BOS","SF,PF",7.8],["A. Edwards","MIN","PG,SG",8.3],["J. Johnson","ATL","SF,PF",9.3],["C. Flagg","DAL","SG,SF,PF",10],["D. Mitchell","CLE","PG,SG",12.8],["S. Barnes","TOR","SF,PF,C",13],["T. Maxey","PHI","PG",14.8],["K. Towns","NYK","PF,C",17.3],["A. Şengün","HOU","PF,C",18.3],["T. Haliburton","IND","PG,SG",19.5],["A. Thompson","HOU","PG,SG",20.5],["A. Reaves","LAL","PG,SG,SF",22.3],["T. Young","WAS","PG",22.8],["K. Durant","HOU","SG,SF,PF",23.5],["E. Mobley","CLE","PF,C",24],["J. Brunson","NYK","PG",24.5],["J. Murray","DEN","PG",25],["B. Adebayo","MIA","PF,C",25],["J. Giddey","CHI","PG,SG",26],["A. Davis","WAS","PF,C",27.8],["D. Booker","PHX","PG,SG",29],["S. Curry","GSW","PG",30.5],["D. Sabonis","SAC","PF,C",30.5],["D. Avdija","POR","SG,SF,PF",31.3],["J. Harden","CLE","PG,SG",31.8],["C. Holmgren","OKC","PF,C",33],["L. Ball","MIN","PG",34.5],["W. Kessler","LAL","C",34.5],["J. Williams","OKC","SF,PF",35.5],["J. Duren","DET","C",35.5],["P. Banchero","ORL","PF",36],["T. Murphy III","NOP","SG,SF",37],["J. Brown","PHI","SG,SF,PF",41],["B. Miller","CHA","SF,PF",41.5],["K. Knueppel","CHA","SG,SF",41.5],["D. Clingan","POR","C",43.3],["L. Markkanen","UTA","SF,PF",44.5],["P. Siakam","IND","PF,C",45.8],["F. Wagner","ORL","SF,PF",45.8],["D. White","BOS","PG,SG",47.8],["K. Leonard","TOR","SG,SF,PF",48.3],["T. Herro","MIL","PG,SG",49.5],["O. Okongwu","ATL","C",50],["J. Randle","BKN","PF",53.5],["D. Daniels","ATL","SG,SF",54],["D. Garland","LAC","PG",55.8],["R. Rollins","MIL","PG,SG",55.8],["J. Jackson Jr.","UTA","PF,C",56.3],["N. Alexander-Walker","ATL","PG,SG",56.8],["S. Castle","SAS","PG,SG",57.5],["K. Irving","DAL","PG",58],["L. James","PHI","SF,PF",58.3],["D. Bane","ORL","SG,SF",58.8],["C. Boozer","MEM","PF",58.8],["M. Buzelis","CHI","SF,PF",59],["K. George","UTA","PG,SG",59.5],["M. Porter Jr.","BKN","SF,PF",63],["D. Murray","NOP","PG",64.5],["K. Ware","MIL","C",65.5],["J. Embiid","PHI","C",66.5],["Z. Williamson","NOP","PF,C",67.3],["A. Sarr","WAS","C",67.5],["I. Zubac","IND","C",68.3],["N. Reid","CHA","PF,C",70],["B. Ingram","LAC","SG,SF,PF",70.5],["P. Pritchard","BOS","PG",71],["D. Queen","NOP","PF,C",71.5],["D. Fox","SAS","PG",71.8],["Z. Edey","MEM","C",71.8],["V. Edgecombe","PHI","PG,SG",74.3],["J. McDaniels","MIN","SF",75.3],["O. Anunoby","NYK","SF,PF",76],["Mikal Bridges","NYK","SF,PF",79.3],["R. Gobert","MIN","C",81],["C. White","CHA","PG,SG",81.5],["C. Wilson","CHI","PF",81.5],["D. Harper","SAS","PG,SG",85.3],["A. Dybantsa","WAS","SF",85.3],["J. Allen","CLE","C",87.5],["C. Coward","MEM","SG,SF",88],["I. Quickley","TOR","PG,SG",90],["T. Jerome","MEM","PG,SG",90.5],["D. Lillard","POR","PG",90.8],["D. Peterson","UTA","SG",90.8],["Miles Bridges","PHX","PF",91.8],["J. Hart","NYK","SG,SF",92.5],["N. Claxton","CHI","C",95],["D. Sharpe","BKN","C",96.5],["Ausar Thompson","DET","SG,SF,PF",96.5],["J. Morant","POR","PG",99.5],["J. Smith Jr.","HOU","PF,C",99.5],["A. Wiggins","MIA","SG,SF,PF",100.5],["J. Green","PHX","SG,SF",101.5],["N. Powell","CHI","SG,SF",102],["P. George","BOS","SF,PF",102.5],["J. Suggs","ORL","PG,SG",104],["C. McCollum","ATL","PG,SG",104.5],["D. Acuff Jr.","SAC","PG",105.5],["M. Turner","MIL","C",106.3],["J. Jaquez Jr.","MIL","SG,SF,PF",107.8],["B. Podziemski","GSW","PG,SG",108.8],["K. George","WAS","SG,SF,PF",110.3],["A. Dosunmu","MIN","PG,SG",111.3],["R. Barrett","TOR","SG,SF,PF",111.5],["K. Murray","SAC","SF,PF",113],["T. Camara","POR","SF,PF",113.5],["I. Hartenstein","OKC","C",116.5],["K. Porter Jr.","MIL","PG,SG",119],["R. Sheppard","HOU","PG,SG",120.8],["S. Bey","NOP","SF,PF",121],["Davion Mitchell","MIA","PG",121],["A. Black","ORL","PG,SG,SF",121.5],["J. Nurkić","UTA","C",121.8],["C. Murray-Boyles","TOR","PF,C",124],["N. Queta","BOS","C",124.5],["Q. Grimes","LAL","SG,SF",124.8],["Y. Lendeborg","GSW","PF",125],["J. Collins","DET","PF,C",125.3],["J. Fears","NOP","PG,SG",126.3],["S. Mamukelashvili","LAL","PF,C",127.8],["P. Watson","CLE","SF,PF",128.5],["C. Braun","DEN","SG,SF,PF",129.3],["M. Raynaud","SAC","C",131.3],["W. Carter Jr.","ORL","C",132.8],["K. Maluach","PHX","C",134],["A. Mitchell","OKC","PG,SG",134.3],["E. Dëmin","BKN","PG,SG",134.3],["C. Gillespie","PHX","PG,SG",134.8],["A. Nembhard","IND","PG,SG",136.3],["F. VanVleet","HOU","PG",136.8],["K. Wagler","LAC","SG",137.3],["Z. LaVine","SAC","PG,SG,SF",138.8],["M. Brown Jr.","BKN","PG",139],["I. Stewart","MEM","PF,C",139.5],["P. Washington","DAL","PF,C",140.5],["M. Williams","PHX","C",140.5],["A. Gordon","DEN","PF,C",141.8],["J. Butler III","GSW","SF,PF",142],["D. DeRozan","DEN","SF,PF",142.8],["A. Bailey","UTA","SF,PF",143.3],["J. Holiday","POR","PG,SG",144.5],["C. Sexton","LAL","PG,SG",145.5],["C. Wallace","OKC","PG,SG,SF",145.8],["D. Vassell","SAS","SG,SF",146.8],["K. Filipowski","UTA","PF,C",147.5]];
   const XR_W = 0.7; // draft order = 70% consensus value + 30% live market ADP; below ~150 there's no xRank, so ADP alone
-  const CURRENT_VERSION = "1.21";
+  const CURRENT_VERSION = "1.22";
   const RAW_URL = 'https://raw.githubusercontent.com/JWangDes/Fantasy-Basketball-Cheat-Sheet/main/jasons-cheat-sheet.user.js';
 
   const CATS = ['FG%', 'FT%', '3PM', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'TO'];
@@ -343,7 +343,9 @@
   #fh .cell.nt{background:#161b21}#fh .cell.nt i{color:#4a535d}
   #fh .cell.up,#fh .net.up{background:#14301d;color:#6fd184}#fh .cell.dn,#fh .net.dn{background:#361714;color:#ee7a6c}
   #fh .cell.str{box-shadow:inset 2px 0 0 rgba(111,209,132,.55),inset -2px 0 0 rgba(111,209,132,.55)}
+  #fh .cell.tgt{box-shadow:inset 2px 0 0 rgba(232,200,76,.5),inset -2px 0 0 rgba(232,200,76,.5)}
   #fh .strip.hdr span.str{background:rgba(111,209,132,.14);border-radius:4px}
+  #fh .strip.hdr span.tgt{background:rgba(232,200,76,.14);border-radius:4px}
   #fh .net.nt{color:#9aa4af;background:#1b2128}
   #fh .up{color:#6fd184}#fh .dn{color:#ee7a6c}
   #fh .s{padding:8px 0;border-top:1px solid #222a32}
@@ -432,7 +434,7 @@
   const ICON_POP = SVG('<path d="M10 2.5h3.5V6M13.5 2.5L8.5 7.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9.5v3.5a.5.5 0 01-.5.5h-8a.5.5 0 01-.5-.5v-8a.5.5 0 01.5-.5H7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>');
   const ICON_DOCK = SVG('<path d="M13.5 2.5L9 7M9 3.5V7h3.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9.5v3.5a.5.5 0 01-.5.5h-8a.5.5 0 01-.5-.5v-8a.5.5 0 01.5-.5H7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>');
   const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  function playerCard({ p, moves, score }, cur, waitPick, strong) {
+  function playerCard({ p, moves, score }, cur, waitPick, rails) {
     const byCat = {}; (moves || []).forEach(x => byCat[x[0]] = x);
     const net = (moves || []).reduce((s, x) => s + x[3], 0);
     const L = p.line;
@@ -440,9 +442,12 @@
     const fv = (i, v) => i < 2 ? v.toFixed(3).replace(/^0/, '') : v.toFixed(1);
     const cells = `<div class="strip">${'<span class="net ' + (net > 0 ? 'up' : net < 0 ? 'dn' : 'nt') + '" title="' + (net > 0 ? '+' : '') + net + ' rank places gained · ' + score.toFixed(1) + ' after weighting each category by how much it is worth to you — the list is ordered by this second number"><b>' + (net > 0 ? '+' : '') + net + '</b><i>' + (score > 0 ? '+' : '') + score.toFixed(1) + '</i></span>'}${CATS.map((c, i) => {
       const x = byCat[c]; const d = x ? x[3] : 0;
-      // a rail marks a category you already win: a ▼ there is dilution, not damage — you keep the category either way
-      const title = `${c}: ${fv(i, vals[i])} per game${x ? ` · your rank #${x[1]} → #${x[2]}` : ' · no rank change'}${strong && strong[i] ? ' · you already win this one' : ''}`;
-      return `<span class="cell ${strong && strong[i] ? 'str ' : ''}${d > 0 ? 'up' : d < 0 ? 'dn' : 'nt'}" title="${title}"><b>${fv(i, vals[i])}</b><i>${d > 0 ? '▲' + d : d < 0 ? '▼' + (-d) : '–'}</i></span>`;
+      // Rails mark the categories still worth reading: green = already won (a ▼ there is dilution, not damage),
+      // yellow = contested, where a ▲ is worth the most. Green fill inside a yellow rail is the best thing on the card.
+      const rail = rails ? rails[i] : '';
+      const why = rail === 'str' ? ' · you already win this one' : rail === 'tgt' ? ' · contested — a gain here is worth the most' : '';
+      const title = `${c}: ${fv(i, vals[i])} per game${x ? ` · your rank #${x[1]} → #${x[2]}` : ' · no rank change'}${why}`;
+      return `<span class="cell ${rail ? rail + ' ' : ''}${d > 0 ? 'up' : d < 0 ? 'dn' : 'nt'}" title="${title}"><b>${fv(i, vals[i])}</b><i>${d > 0 ? '▲' + d : d < 0 ? '▼' + (-d) : '–'}</i></span>`;
     }).join('')}</div>`;
     let tag = '';
     if (p.adp < cur - 12) tag = `<span class="tag fall">Faller</span>`;
@@ -485,13 +490,13 @@
     if (!S.ready || !AVG) { root.innerHTML = head; return; }
     const base = analyze();
     const grid = CATS.map((c, i) => `<div class="row"><span class="cn">${c}</span><span class="val">${fmt(i, base.my[i])}</span><span class="rk ${cls(base.ranks[i])}" >#${base.ranks[i]}</span></div>`).join('');
-    const strong = base.ranks.map(r => band(r) === 0); // the categories you've already locked
-    const colHead = `<div class="strip hdr"><span class="nh" title="Net rank change across all 9 categories">Net</span>${SHORT.map((s, i) => `<span class="${cls(base.ranks[i])}t${strong[i] ? ' str' : ''}">${s}</span>`).join('')}</div>`;
-    const sug = suggestions(base, waitPick).map(x => playerCard(x, cur, waitPick, strong)).join('');
+    const rails = base.ranks.map(r => band(r) === 0 ? 'str' : band(r) === 1 ? 'tgt' : ''); // locked / contested / ignore
+    const colHead = `<div class="strip hdr"><span class="nh" title="Net rank change across all 9 categories">Net</span>${SHORT.map((s, i) => `<span class="${cls(base.ranks[i])}t${rails[i] ? ' ' + rails[i] : ''}">${s}</span>`).join('')}</div>`;
+    const sug = suggestions(base, waitPick).map(x => playerCard(x, cur, waitPick, rails)).join('');
     const q = S.query.trim();
     const results = q ? searchResults(base) : [];
     const searchBody = !q ? '' : results.length
-      ? colHead + results.map(x => playerCard(x, cur, waitPick, strong)).join('')
+      ? colHead + results.map(x => playerCard(x, cur, waitPick, rails)).join('')
       : `<div class="empty">No available players match "${escHtml(q)}".</div>`;
     root.innerHTML = head + `<div class="bd">
       <div><div class="sec"><span>Category ranks</span><span>Overall #${overallRank()} of 12</span></div>

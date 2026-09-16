@@ -65,12 +65,12 @@ User preferences: main points, no fluff. Say "I don't know" and verify when unce
   pick after his whole consecutive run, not the next pick that happens to be his. At a back-to-back (48/49) no one else
   picks in between, so measuring against 49 makes everything read "Likely there"; the real question is who survives to 72.
 - UI: fixed panel, 497px wide, draggable (position saved in localStorage `fhPos`), minimize button.
-- Green side rails run down the columns Jason already wins (band 0, rank ≤ 3), with a tinted header chip. Rails rather than a
-  fill because the cell background already means "this player moves you up/down" — two meanings can't share it.
-  Only the top band is railed: marking more bands marks most of the nine columns, which highlights nothing (mocked it
-  up twice and both times the busier version lost).
-  The point is reading a ▼ in context — an 82% FT shooter dilutes a category you're #3 in, but you still win it, so the
-  red is noise. A rail says the drop is affordable.
+- Side rails mark the columns worth reading: **green** = already won (band 0), **yellow** = contested (band 1), and
+  7–12 stay bare so they read as "ignore". Rails rather than a fill because the cell background already means "this
+  player moves you up/down" — two meanings can't share one channel.
+  The value is in the *intersection*, which is why both bands are railed: green fill in a yellow rail is a gain in a
+  category still in play (the best thing on a card), red in a yellow rail is real damage, and red in a green rail is
+  only dilution — an 82% FT shooter drops a category you're #3 in, but you still win it, so the red is noise.
 - Pop out (⧉) moves the panel into its own window. Sync still runs in the draft tab — only that tab can see Yahoo's
   WebSocket — so the popup is purely a render target the draft tab paints into (`about:blank` inherits the opener's
   origin, so no messaging is needed). Two things this depends on: `schedule()` must use the **popup's** timers, since a
