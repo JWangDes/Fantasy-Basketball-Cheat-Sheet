@@ -46,7 +46,7 @@ User preferences: main points, no fluff. Say "I don't know" and verify when unce
   (Kawhi: xRank 48, ADP 23 — a blend is too late to warn he's gone, too early to reflect his value).
   xRank and ADP correlate at r≈0.97, so the weight mostly matters for the ~20 players who diverge by 15+ picks.
 - Value gap (`ADP − xRank`, shown as a `+n value` / `−n reach` badge when |gap| ≥ 8) is the one signal Yahoo's UI doesn't have.
-- Best fit sorts by urgency tier first (won't last to your next turn → coin flip → he'll keep), then by fit score.
+- **Best pick** sorts by urgency tier first (won't last to your next turn → coin flip → he'll keep), then by fit score.
   A great fit you can still get at your next turn isn't worth spending this pick on; waiting gets you both. Players
   who'll keep are sorted down, never hidden — that a need can wait is itself useful. Early rounds are where this bites:
   at pick 12 the best fit in the pool often sits at ADP 38 and would otherwise top the list.
@@ -57,9 +57,10 @@ User preferences: main points, no fluff. Say "I don't know" and verify when unce
 - Each card shows two numbers in the Net box: raw rank places gained (big) over the weighted score the list is actually
   ordered by (small). They diverge — +3 in a locked category scores below +2 in a contested one — and hiding the second
   made the ordering look arbitrary.
-- Three list modes: **Best fit** (rank change weighted by the bands above),
-  **ADP** (pure market order), **Best available** (consensus value). The candidate pool is the top 60 by whichever key the
-  mode sorts on — pooling by value while sorting by ADP would drop market darlings — and 20 are shown.
+- Four list modes: **Best pick** (urgency then fit — the default), **Best fit** (the same weighted fit score with the
+  urgency tier dropped, for late rounds when everyone left lasts for rounds and timing stops discriminating),
+  **ADP** (pure market order), **Best available** (consensus value). The candidate pool is the top 90 by whichever key the
+  mode sorts on — pooling by value while sorting by ADP would drop market darlings — and 30 are shown.
 - Tags compare ADP to the pick Jason would wait for: gap ≥ 6 "Likely there", within ±6 "Maybe there", else "Likely gone";
   "Faller" when the player is still available 12+ picks past his ADP. On the clock that horizon is `myNextTurn` — the
   pick after his whole consecutive run, not the next pick that happens to be his. At a back-to-back (48/49) no one else

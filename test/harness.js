@@ -92,6 +92,17 @@ setTimeout(()=>{
     if(rows[0].tier!==1) throw new Error('urgency sort: top suggestion is not from the most urgent tier');
     if(!rows.some(r=>r.tier===3)) throw new Error('urgency sort: "Likely there" players were dropped instead of sorted down');
     if(rows[0].net>=Math.max(...rows.map(r=>r.net))) throw new Error('urgency sort fixture: top row already had the best fit, so this would pass without the tier sort');
+    if(rows.length!==30) throw new Error(`expected 30 suggestions, got ${rows.length}`);
+    // pure Best fit drops the urgency tier and ranks weighted score alone
+    const pickOrder=rows.map(r=>r.name).join();
+    els[0]._emit('click',{target:{closest:q=>q==='button'?{dataset:{mode:'fit'}}:null}});
+    const fitRows=els[0].innerHTML.split('<div class="s">').slice(1).map(c=>({
+      name:(c.match(/class="nm">([^<]+)/)||[])[1],
+      score:+((c.match(/class="net [a-z]+"[^>]*><b>[^<]*<\/b><i>([+-]?[\d.]+)/)||[])[1]||0)}));
+    for(let i=1;i<fitRows.length;i++) if(fitRows[i].score>fitRows[i-1].score+1e-9)
+      throw new Error(`pure fit: ${fitRows[i].name} (${fitRows[i].score}) ranked above ${fitRows[i-1].name} (${fitRows[i-1].score})`);
+    if(fitRows.map(r=>r.name).join()===pickOrder) throw new Error('pure fit: order identical to Best pick — the tier sort was not dropped');
+    els[0]._emit('click',{target:{closest:q=>q==='button'?{dataset:{mode:'pick'}}:null}});
     els[0]._emit('input',{target:{id:'fh-search',value:''}});
     // pop out into its own window, then close it and make sure the inline panel comes back
     const click=(el,act)=>el._emit('click',{target:{closest:s=>s==='button'?{dataset:{act}}:null}});

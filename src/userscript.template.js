@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.22
+// @version      1.23
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -31,7 +31,7 @@
   const m = location.pathname.match(/draftclient\/nba\/(\d+)\/(\d+)/);
   const LEAGUE = m ? m[1] : null, MY_TEAM = m ? +m[2] : null;
 
-  const S = { picks: new Map(), onClock: null, order: [], players: new Map(), ready: false, err: null, mode: 'fit', collapsed: false, query: '', newVersion: null, popErr: null };
+  const S = { picks: new Map(), onClock: null, order: [], players: new Map(), ready: false, err: null, mode: 'pick', collapsed: false, query: '', newVersion: null, popErr: null };
 
   // ---------- 0. check GitHub for a newer version as soon as the draft room opens ----------
   async function checkForUpdate() {
@@ -285,12 +285,14 @@
   function suggestions(base, waitPick) {
     const key = S.mode === 'adp' ? (p => p.adp) : (p => p.value); // pool by the same key we sort on, or ADP mode drops market darlings
     const avail = availablePlayers().sort((a, b) => key(a) - key(b));
-    return avail.slice(0, 60).map(p => ({ p, ...evaluate(p, base) }))
-      // Best fit is about this pick, not the abstract best fit: a great fit you can still get at your next turn
-      // isn't worth spending this one on, so he sorts under the ones who won't be there. Damped, never hidden.
-      .sort((x, y) => S.mode === 'fit'
-        ? (urgency(x.p, waitPick) - urgency(y.p, waitPick)) || (y.score - x.score) || (x.p.value - y.p.value)
-        : key(x.p) - key(y.p)).slice(0, 20);
+    // 'pick' = best use of THIS pick: a great fit you can still get at your next turn sorts under one who won't be
+    // there, because waiting gets you both. 'fit' drops that and ranks pure roster need — the honest answer late on,
+    // when everyone left is going undrafted for rounds and timing stops discriminating.
+    return avail.slice(0, 90).map(p => ({ p, ...evaluate(p, base) }))
+      .sort((x, y) =>
+        S.mode === 'pick' ? (urgency(x.p, waitPick) - urgency(y.p, waitPick)) || (y.score - x.score) || (x.p.value - y.p.value)
+          : S.mode === 'fit' ? (y.score - x.score) || (x.p.value - y.p.value)
+            : key(x.p) - key(y.p)).slice(0, 30);
   }
   const searchNorm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   function searchResults(base) {
@@ -504,7 +506,7 @@
       <div><div class="sec"><span>Search players</span></div>
       <input id="fh-search" type="search" autocomplete="off" placeholder="Player name…" value="${escHtml(S.query)}">
       ${searchBody}</div>
-      <div><div class="sec"><span>Next pick</span><span class="seg"><button data-mode="fit" class="${S.mode === 'fit' ? 'on' : ''}">Best fit</button><button data-mode="adp" class="${S.mode === 'adp' ? 'on' : ''}" title="Pure Yahoo ADP — market order">ADP</button><button data-mode="bpa" class="${S.mode === 'bpa' ? 'on' : ''}" title="Consensus value: 70% xRank + 30% ADP">Best available</button></span></div>
+      <div><div class="sec"><span>Next pick</span><span class="seg"><button data-mode="pick" class="${S.mode === 'pick' ? 'on' : ''}" title="Best use of this pick: fit, but anyone you can still get at your next turn sorts lower">Best pick</button><button data-mode="fit" class="${S.mode === 'fit' ? 'on' : ''}" title="Pure category fit — ignores whether he'll still be there">Best fit</button><button data-mode="adp" class="${S.mode === 'adp' ? 'on' : ''}" title="Pure Yahoo ADP — market order">ADP</button><button data-mode="bpa" class="${S.mode === 'bpa' ? 'on' : ''}" title="Consensus value: 70% xRank + 30% ADP">Best available</button></span></div>
       ${colHead}${sug}</div></div>`;
 
     if (searchFocused) {
