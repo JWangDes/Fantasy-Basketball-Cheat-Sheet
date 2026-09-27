@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.25
+// @version      1.26
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -22,10 +22,10 @@
   const RAW_URL = 'https://raw.githubusercontent.com/JWangDes/Fantasy-Basketball-Cheat-Sheet/main/jasons-cheat-sheet.user.js';
 
   const CATS = ['FG%', 'FT%', '3PM', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'TO'];
-  // An absolute "this is genuinely a good number" bar, independent of rank movement — roughly the top 30% of the
+  // An absolute "this is genuinely a good number" bar, independent of rank movement — roughly the top 30-40% of the
   // draftable pool in each category. Set at the pool median instead and ~60% of players clear it, which highlights
   // nothing: a median FG% doesn't improve your team, it matches what you already have. TO is inverted.
-  const GOOD = [0.49, 0.84, 2.2, 20, 7, 5, 1.2, 1.0, 1.5];
+  const GOOD = [0.49, 0.84, 2.2, 18, 7, 5, 1.2, 0.8, 1.5];
   const isGood = (i, v) => i === 8 ? v <= GOOD[i] : v >= GOOD[i];
   // 1-3 double down (already won) · 4-6 target (contested, where a pick is worth most) · 7-9 consider (uphill,
   // but 7 is the tipping point so it isn't discounted to punt levels) · 10-12 punt. Colour and weight share
