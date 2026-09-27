@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.28
+// @version      1.29
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -22,12 +22,12 @@
   const RAW_URL = 'https://raw.githubusercontent.com/JWangDes/Fantasy-Basketball-Cheat-Sheet/main/jasons-cheat-sheet.user.js';
 
   const CATS = ['FG%', 'FT%', '3PM', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'TO'];
-  // An absolute "this is genuinely a good number" bar, independent of rank movement — roughly the top 30-40% of the
-  // draftable pool in each category. Set at the pool median instead and ~60% of players clear it, which highlights
-  // nothing: a median FG% doesn't improve your team, it matches what you already have. TO is inverted.
-  // Only drawn inside a rail: a strong number in a category you've already punted shouldn't pull the eye, and
-  // restricting it to the three-ish columns that matter is what buys the glow enough contrast to be worth having.
-  const GOOD = [0.49, 0.84, 2.2, 18, 7, 5, 1.2, 0.8, 1.5];
+  // An absolute "this is a useful number" bar, independent of rank movement. Deliberately not set at elite level:
+  // past round 8 nobody clears an elite bar, so the boxes would go dark exactly where they're most needed to separate
+  // marginal players. Rate/skill stats (FG%, FT%, 3PM, STL) are loose because a late role player really can be good at
+  // them; PTS stays strict because scoring is a volume stat and late picks don't have the volume. TO is inverted.
+  // Only drawn inside a rail — a strong number in a category already punted shouldn't pull the eye.
+  const GOOD = [0.47, 0.80, 1.6, 18, 6, 4.5, 1.0, 0.8, 1.5];
   const isGood = (i, v) => i === 8 ? v <= GOOD[i] : v >= GOOD[i];
   // 1-3 double down (already won) · 4-6 target (contested, where a pick is worth most) · 7-9 consider (uphill,
   // but 7 is the tipping point so it isn't discounted to punt levels) · 10-12 punt. Colour and weight share
@@ -347,7 +347,7 @@
   #fh .strip{display:grid;grid-template-columns:38px repeat(9,1fr);gap:3px;align-items:stretch;margin-top:4px}
   #fh .strip.hdr span{text-align:center;font-size:13.5px;font-weight:700}
   #fh .cell,#fh .net{text-align:center;font-size:13.5px;font-weight:700;border-radius:4px;padding:3px 0;display:flex;flex-direction:column;justify-content:center;line-height:1.2}
-  #fh .cell b{font-weight:600;color:#e9edf1}#fh .cell b.hi{color:#fff;font-weight:800;text-shadow:0 0 10px rgba(255,255,255,.85),0 0 4px rgba(255,255,255,.6)}#fh .cell i,#fh .net i{font-style:normal;font-weight:700}
+  #fh .cell b{font-weight:600;color:#e9edf1}#fh .cell i,#fh .net i{font-style:normal;font-weight:700}
   #fh .net i{font-size:11.5px;opacity:.72}
   #fh .cell.nt{background:#161b21}#fh .cell.nt i{color:#4a535d}
   #fh .cell.up,#fh .net.up{background:#14301d;color:#6fd184}#fh .cell.dn,#fh .net.dn{background:#361714;color:#ee7a6c}
@@ -459,7 +459,7 @@
       const strongHere = !!rail && isGood(i, vals[i]); // strong number in a category that matters: close the rail into a box
       const why = rail === 'str' ? ' · you already win this one' : rail === 'tgt' ? ' · contested — a gain here is worth the most' : '';
       const title = `${c}: ${fv(i, vals[i])} per game${x ? ` · your rank #${x[1]} → #${x[2]}` : ' · no rank change'}${why}${strongHere ? ' · strong number on its own' : ''}`;
-      return `<span class="cell ${rail ? rail + ' ' : ''}${strongHere ? 'bx ' : ''}${d > 0 ? 'up' : d < 0 ? 'dn' : 'nt'}" title="${title}"><b class="${strongHere ? 'hi' : ''}">${fv(i, vals[i])}</b><i>${d > 0 ? '▲' + d : d < 0 ? '▼' + (-d) : '–'}</i></span>`;
+      return `<span class="cell ${rail ? rail + ' ' : ''}${strongHere ? 'bx ' : ''}${d > 0 ? 'up' : d < 0 ? 'dn' : 'nt'}" title="${title}"><b>${fv(i, vals[i])}</b><i>${d > 0 ? '▲' + d : d < 0 ? '▼' + (-d) : '–'}</i></span>`;
     }).join('')}</div>`;
     let tag = '';
     if (p.adp < cur - 12) tag = `<span class="tag fall">Faller</span>`;

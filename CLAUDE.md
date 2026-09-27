@@ -77,16 +77,18 @@ User preferences: main points, no fluff. Say "I don't know" and verify when unce
   The value is in the *intersection*, which is why both bands are railed: green fill in a yellow rail is a gain in a
   category still in play (the best thing on a card), red in a yellow rail is real damage, and red in a green rail is
   only dilution — an 82% FT shooter drops a category you're #3 in, but you still win it, so the red is noise.
-- Stat values glow white when they clear `GOOD` — an absolute per-category bar (`0.49 / 0.84 / 2.2 / 18 / 7 / 5 / 1.2 /
-  0.8 / TO ≤1.5`), roughly the top 30-40% of the draftable pool — **and only inside a rail**. A strong number in a
-  category already punted shouldn't pull the eye, and confining it to the ~3 columns that matter is what buys the glow
-  enough contrast to be worth having (~16% of cells, versus 37% unconfined and too faint to read).
-  A strong number also closes its rail into a full box (top and bottom added, brighter) — the rail's own language
-  rather than a competing colour, so the up/down background survives underneath. Tried filling the cell with the rail
-  colour instead and it read cleaner but ate the rank-movement fill, and keeping red for downgrades brought back noise
-  in unrailed columns where a drop doesn't matter.
-  Four signals that don't collide: fill = what he does to your rank, rail = does the category matter, closed box =
-  strong number in a category that matters, glow = the number itself. Calibrate replacements by percentile, not by feel —
+- A stat that clears `GOOD` (`0.47 / 0.80 / 1.6 / 18 / 6 / 4.5 / 1.0 / 0.8 / TO ≤1.5`) **and sits inside a rail** gets
+  its rail closed into a full box. Bars are set at "useful", not "elite": with elite bars only 1-23% of the xRank
+  100-200 pool cleared anything, so boxes went dark past round 8 — exactly where they're needed to separate marginal
+  players. Rate/skill stats (FG%, FT%, 3PM, STL) are loose because a late role player genuinely can be good at them;
+  PTS stays strict at 18 because scoring is a volume stat and late picks don't have volume (1% of the late pool clears
+  it, and that's correct). A strong number in an already-punted category doesn't get a box at all.
+  The box is the rail's own language rather than a competing colour, so the up/down background survives underneath.
+  Tried filling the cell with the rail colour instead: cleaner, but it ate the rank-movement fill, and keeping red for
+  downgrades to compensate put warnings back in unrailed columns where a drop costs nothing. A white glow on the value
+  was tried too and dropped — the box says it better on its own.
+  Three signals that don't collide: fill = what he does to your rank, rail = does the category matter, closed box =
+  a useful number in a category that matters. Calibrate replacements by percentile, not by feel —
   .470 FG% reads like a good basketball number but is the pool median, so ~60% clear it and the highlight means nothing.
 - Pop out (⧉) moves the panel into its own window. Sync still runs in the draft tab — only that tab can see Yahoo's
   WebSocket — so the popup is purely a render target the draft tab paints into (`about:blank` inherits the opener's
