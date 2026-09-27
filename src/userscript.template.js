@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.23
+// @version      1.24
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start

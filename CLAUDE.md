@@ -13,12 +13,17 @@ User preferences: main points, no fluff. Say "I don't know" and verify when unce
 
 ## Files
 - `src/userscript.template.js` — the source. Edit this, never the built file.
-- `src/proj.json` — saved projections for 250 players: `[name, team, pos, [GP, FG%, FT%, 3PM, PTS, REB, AST, STL, BLK, TO]]` per game. Fallback only.
-- `build.js` — replaces `__PROJ__` with proj.json, `__VERSION__` with the template's `@version`, and `__XRANK__` with the xRank column parsed out of `docs/player-data.md`; writes `jasons-cheat-sheet.user.js`.
+- `src/proj.json` — all static player data, 252 entries: `[name, team, pos, [GP, FG%, FT%, 3PM, PTS, REB, AST, STL, BLK, TO], xRank]`.
+  Stats are **per game** and are a fallback only (Yahoo's live projection wins). `xRank` is the multi-source consensus
+  rank, `null` for the ~54 players outside it — those fall back to ADP alone for ordering. Source data arrives as
+  season totals, so divide by GP when refreshing.
+- `build.js` — replaces `__PROJ__` with proj.json, `__VERSION__` with the template's `@version`, and `__XRANK__` with the
+  xRank field lifted out of proj.json; writes `jasons-cheat-sheet.user.js`. Throws if fewer than 100 players carry an xRank.
 - `jasons-cheat-sheet.user.js` — built output that Jason pastes into Tampermonkey. Commit it.
 - `test/harness.js` — Node simulation (stub DOM, WebSocket, fetch); writes `test/panel.html`.
-- `docs/` — copies of the claude.ai Project docs (strategy, draft plan, player data). Source of truth is the Project; recopy when they change.
-  `player-data.md` is also a **build input** (its xRank column) — keep the table's `| xRk | Player | Pos | Tm | Flag | ADP |` column order or the build throws.
+- `docs/` — copies of the claude.ai Project docs (strategy, draft plan, player data). Source of truth is the Project;
+  recopy when they change. Reference only — nothing in the build reads them (xRank used to be parsed out of
+  `player-data.md`; it now lives in proj.json, so that table can go stale without breaking anything).
 
 ## Workflow
 1. Edit `src/userscript.template.js`. Bump `// @version` every change.
@@ -41,7 +46,7 @@ User preferences: main points, no fluff. Say "I don't know" and verify when unce
   Ranks are against the other 11 teams (TO: lower is better).
 - `effectiveAdp` blends ADP with o_rank when percent-drafted is low (noisy ADP).
 - Two separate numbers, deliberately not merged: **value** = `0.7 × xRank + 0.3 × effectiveAdp` (`p.value`, falls back to
-  effectiveAdp below xRank ~150) orders Best available, the top-40 candidate pool, and search results; **timing** =
+  effectiveAdp for the ~54 players with no xRank) orders Best available, the top-40 candidate pool, and search results; **timing** =
   `effectiveAdp` alone (`p.adp`) drives the Likely there / gone tags. Blending them would make each wrong for its own job
   (Kawhi: xRank 48, ADP 23 — a blend is too late to warn he's gone, too early to reflect his value).
   xRank and ADP correlate at r≈0.97, so the weight mostly matters for the ~20 players who diverge by 15+ picks.

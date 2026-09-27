@@ -37,7 +37,13 @@ setTimeout(()=>{
   const ws=new window.WebSocket('wss://x');
   const order=[];for(let r=0;r<13;r++){const s=[...Array(12)].map((_,i)=>i+1);order.push(...((r==1||r==2||(r>3&&r%2==0))?s.reverse():s))}
   ws.emit('message',new MessageEvent(ws,'R|'+order.join('|')));
-  let pk=1, id=1; const P=[]; for(;pk<=30;pk++){ if(id===9) id++; P.push(`${pk}=${id++},${order[pk-1]},0`)}
+  // Leave undrafted: both J. Williams (the name-collision test needs them on the board) and one very-low-ADP
+  // player (so the urgency test at pick 12 has a "Likely gone" candidate to rank first). Their indices move
+  // whenever proj.json is re-sorted, so derive them rather than hard-coding ids.
+  const wills=players.filter(p=>p.lname==='Williams'&&p.team_abbr==='OKC').map(p=>p.id);
+  if(wills.length!==2) throw new Error('fixture: expected both J. Williams on OKC to be in the player list');
+  const keepFree=new Set([players[8].id,...wills]);
+  let pk=1, id=1; const P=[]; for(;pk<=30;pk++){ while(keepFree.has(id)) id++; P.push(`${pk}=${id++},${order[pk-1]},0`)}
   ws.emit('message',new MessageEvent(ws,'P|'+P.join('|')));
   ws.emit('message',new MessageEvent(ws,'D|31|'+order[30]+'|105'));
   setTimeout(async ()=>{
