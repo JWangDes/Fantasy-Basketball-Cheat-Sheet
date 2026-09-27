@@ -77,6 +77,11 @@ User preferences: main points, no fluff. Say "I don't know" and verify when unce
   The value is in the *intersection*, which is why both bands are railed: green fill in a yellow rail is a gain in a
   category still in play (the best thing on a card), red in a yellow rail is real damage, and red in a green rail is
   only dilution — an 82% FT shooter drops a category you're #3 in, but you still win it, so the red is noise.
+- Stat values glow white when they clear `GOOD` — an absolute per-category bar (`0.49 / 0.84 / 2.2 / 20 / 7 / 5 / 1.2 /
+  1.0 / TO ≤1.5`), roughly the top 30% of the draftable pool. This is orthogonal to everything else on the cell: the
+  rail says whether the category matters, the fill says what he does to your rank, the glow says whether the number is
+  good on its own. Calibrate replacements by percentile, not by feel — .470 FG% reads like a good basketball number but
+  is the pool median, so ~60% of players clear it and the highlight stops meaning anything.
 - Pop out (⧉) moves the panel into its own window. Sync still runs in the draft tab — only that tab can see Yahoo's
   WebSocket — so the popup is purely a render target the draft tab paints into (`about:blank` inherits the opener's
   origin, so no messaging is needed). Two things this depends on: `schedule()` must use the **popup's** timers, since a
