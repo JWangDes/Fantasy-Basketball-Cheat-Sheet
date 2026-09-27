@@ -81,8 +81,12 @@ User preferences: main points, no fluff. Say "I don't know" and verify when unce
   0.8 / TO ≤1.5`), roughly the top 30-40% of the draftable pool — **and only inside a rail**. A strong number in a
   category already punted shouldn't pull the eye, and confining it to the ~3 columns that matter is what buys the glow
   enough contrast to be worth having (~16% of cells, versus 37% unconfined and too faint to read).
-  Orthogonal to everything else on the cell: the rail says whether the category matters, the fill says what he does to
-  your rank, the glow says whether the number is good on its own. Calibrate replacements by percentile, not by feel —
+  A strong number also closes its rail into a full box (top and bottom added, brighter) — the rail's own language
+  rather than a competing colour, so the up/down background survives underneath. Tried filling the cell with the rail
+  colour instead and it read cleaner but ate the rank-movement fill, and keeping red for downgrades brought back noise
+  in unrailed columns where a drop doesn't matter.
+  Four signals that don't collide: fill = what he does to your rank, rail = does the category matter, closed box =
+  strong number in a category that matters, glow = the number itself. Calibrate replacements by percentile, not by feel —
   .470 FG% reads like a good basketball number but is the pool median, so ~60% clear it and the highlight means nothing.
 - Pop out (⧉) moves the panel into its own window. Sync still runs in the draft tab — only that tab can see Yahoo's
   WebSocket — so the popup is purely a render target the draft tab paints into (`about:blank` inherits the opener's

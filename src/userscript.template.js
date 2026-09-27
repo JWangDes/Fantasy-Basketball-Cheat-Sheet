@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.27
+// @version      1.28
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -353,6 +353,8 @@
   #fh .cell.up,#fh .net.up{background:#14301d;color:#6fd184}#fh .cell.dn,#fh .net.dn{background:#361714;color:#ee7a6c}
   #fh .cell.str{box-shadow:inset 2px 0 0 rgba(111,209,132,.55),inset -2px 0 0 rgba(111,209,132,.55)}
   #fh .cell.tgt{box-shadow:inset 2px 0 0 rgba(232,200,76,.5),inset -2px 0 0 rgba(232,200,76,.5)}
+  #fh .cell.str.bx{box-shadow:inset 0 0 0 2px rgba(111,209,132,.95)}
+  #fh .cell.tgt.bx{box-shadow:inset 0 0 0 2px rgba(232,200,76,.9)}
   #fh .strip.hdr span.str{background:rgba(111,209,132,.14);border-radius:4px}
   #fh .strip.hdr span.tgt{background:rgba(232,200,76,.14);border-radius:4px}
   #fh .net.nt{color:#9aa4af;background:#1b2128}
@@ -454,9 +456,10 @@
       // Rails mark the categories still worth reading: green = already won (a ▼ there is dilution, not damage),
       // yellow = contested, where a ▲ is worth the most. Green fill inside a yellow rail is the best thing on the card.
       const rail = rails ? rails[i] : '';
+      const strongHere = !!rail && isGood(i, vals[i]); // strong number in a category that matters: close the rail into a box
       const why = rail === 'str' ? ' · you already win this one' : rail === 'tgt' ? ' · contested — a gain here is worth the most' : '';
-      const title = `${c}: ${fv(i, vals[i])} per game${x ? ` · your rank #${x[1]} → #${x[2]}` : ' · no rank change'}${why}${rail && isGood(i, vals[i]) ? ' · strong number on its own' : ''}`;
-      return `<span class="cell ${rail ? rail + ' ' : ''}${d > 0 ? 'up' : d < 0 ? 'dn' : 'nt'}" title="${title}"><b class="${rail && isGood(i, vals[i]) ? 'hi' : ''}">${fv(i, vals[i])}</b><i>${d > 0 ? '▲' + d : d < 0 ? '▼' + (-d) : '–'}</i></span>`;
+      const title = `${c}: ${fv(i, vals[i])} per game${x ? ` · your rank #${x[1]} → #${x[2]}` : ' · no rank change'}${why}${strongHere ? ' · strong number on its own' : ''}`;
+      return `<span class="cell ${rail ? rail + ' ' : ''}${strongHere ? 'bx ' : ''}${d > 0 ? 'up' : d < 0 ? 'dn' : 'nt'}" title="${title}"><b class="${strongHere ? 'hi' : ''}">${fv(i, vals[i])}</b><i>${d > 0 ? '▲' + d : d < 0 ? '▼' + (-d) : '–'}</i></span>`;
     }).join('')}</div>`;
     let tag = '';
     if (p.adp < cur - 12) tag = `<span class="tag fall">Faller</span>`;
