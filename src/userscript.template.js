@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jason's Cheat Sheet
 // @namespace    jason.fantasyhoops
-// @version      1.26
+// @version      1.27
 // @description  Live 9-cat category ranks and pick suggestions inside the Yahoo draft room
 // @match        https://basketball.fantasysports.yahoo.com/draftclient/*
 // @run-at       document-start
@@ -25,6 +25,8 @@
   // An absolute "this is genuinely a good number" bar, independent of rank movement — roughly the top 30-40% of the
   // draftable pool in each category. Set at the pool median instead and ~60% of players clear it, which highlights
   // nothing: a median FG% doesn't improve your team, it matches what you already have. TO is inverted.
+  // Only drawn inside a rail: a strong number in a category you've already punted shouldn't pull the eye, and
+  // restricting it to the three-ish columns that matter is what buys the glow enough contrast to be worth having.
   const GOOD = [0.49, 0.84, 2.2, 18, 7, 5, 1.2, 0.8, 1.5];
   const isGood = (i, v) => i === 8 ? v <= GOOD[i] : v >= GOOD[i];
   // 1-3 double down (already won) · 4-6 target (contested, where a pick is worth most) · 7-9 consider (uphill,
@@ -345,7 +347,7 @@
   #fh .strip{display:grid;grid-template-columns:38px repeat(9,1fr);gap:3px;align-items:stretch;margin-top:4px}
   #fh .strip.hdr span{text-align:center;font-size:13.5px;font-weight:700}
   #fh .cell,#fh .net{text-align:center;font-size:13.5px;font-weight:700;border-radius:4px;padding:3px 0;display:flex;flex-direction:column;justify-content:center;line-height:1.2}
-  #fh .cell b{font-weight:600;color:#e9edf1}#fh .cell b.hi{color:#fff;font-weight:800;text-shadow:0 0 7px rgba(255,255,255,.4)}#fh .cell i,#fh .net i{font-style:normal;font-weight:700}
+  #fh .cell b{font-weight:600;color:#e9edf1}#fh .cell b.hi{color:#fff;font-weight:800;text-shadow:0 0 10px rgba(255,255,255,.85),0 0 4px rgba(255,255,255,.6)}#fh .cell i,#fh .net i{font-style:normal;font-weight:700}
   #fh .net i{font-size:11.5px;opacity:.72}
   #fh .cell.nt{background:#161b21}#fh .cell.nt i{color:#4a535d}
   #fh .cell.up,#fh .net.up{background:#14301d;color:#6fd184}#fh .cell.dn,#fh .net.dn{background:#361714;color:#ee7a6c}
@@ -453,8 +455,8 @@
       // yellow = contested, where a ▲ is worth the most. Green fill inside a yellow rail is the best thing on the card.
       const rail = rails ? rails[i] : '';
       const why = rail === 'str' ? ' · you already win this one' : rail === 'tgt' ? ' · contested — a gain here is worth the most' : '';
-      const title = `${c}: ${fv(i, vals[i])} per game${x ? ` · your rank #${x[1]} → #${x[2]}` : ' · no rank change'}${why}${isGood(i, vals[i]) ? ' · strong number on its own' : ''}`;
-      return `<span class="cell ${rail ? rail + ' ' : ''}${d > 0 ? 'up' : d < 0 ? 'dn' : 'nt'}" title="${title}"><b class="${isGood(i, vals[i]) ? 'hi' : ''}">${fv(i, vals[i])}</b><i>${d > 0 ? '▲' + d : d < 0 ? '▼' + (-d) : '–'}</i></span>`;
+      const title = `${c}: ${fv(i, vals[i])} per game${x ? ` · your rank #${x[1]} → #${x[2]}` : ' · no rank change'}${why}${rail && isGood(i, vals[i]) ? ' · strong number on its own' : ''}`;
+      return `<span class="cell ${rail ? rail + ' ' : ''}${d > 0 ? 'up' : d < 0 ? 'dn' : 'nt'}" title="${title}"><b class="${rail && isGood(i, vals[i]) ? 'hi' : ''}">${fv(i, vals[i])}</b><i>${d > 0 ? '▲' + d : d < 0 ? '▼' + (-d) : '–'}</i></span>`;
     }).join('')}</div>`;
     let tag = '';
     if (p.adp < cur - 12) tag = `<span class="tag fall">Faller</span>`;

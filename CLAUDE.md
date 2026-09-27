@@ -78,10 +78,12 @@ User preferences: main points, no fluff. Say "I don't know" and verify when unce
   category still in play (the best thing on a card), red in a yellow rail is real damage, and red in a green rail is
   only dilution — an 82% FT shooter drops a category you're #3 in, but you still win it, so the red is noise.
 - Stat values glow white when they clear `GOOD` — an absolute per-category bar (`0.49 / 0.84 / 2.2 / 18 / 7 / 5 / 1.2 /
-  0.8 / TO ≤1.5`), roughly the top 30-40% of the draftable pool. This is orthogonal to everything else on the cell: the
-  rail says whether the category matters, the fill says what he does to your rank, the glow says whether the number is
-  good on its own. Calibrate replacements by percentile, not by feel — .470 FG% reads like a good basketball number but
-  is the pool median, so ~60% of players clear it and the highlight stops meaning anything.
+  0.8 / TO ≤1.5`), roughly the top 30-40% of the draftable pool — **and only inside a rail**. A strong number in a
+  category already punted shouldn't pull the eye, and confining it to the ~3 columns that matter is what buys the glow
+  enough contrast to be worth having (~16% of cells, versus 37% unconfined and too faint to read).
+  Orthogonal to everything else on the cell: the rail says whether the category matters, the fill says what he does to
+  your rank, the glow says whether the number is good on its own. Calibrate replacements by percentile, not by feel —
+  .470 FG% reads like a good basketball number but is the pool median, so ~60% clear it and the highlight means nothing.
 - Pop out (⧉) moves the panel into its own window. Sync still runs in the draft tab — only that tab can see Yahoo's
   WebSocket — so the popup is purely a render target the draft tab paints into (`about:blank` inherits the opener's
   origin, so no messaging is needed). Two things this depends on: `schedule()` must use the **popup's** timers, since a
